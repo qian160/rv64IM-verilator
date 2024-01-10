@@ -1,0 +1,13 @@
+# Prerequisites
+*.d
+
+# Object files
+*.o
+*.bin
+*.elf
+
+.ccache/
+.vscode/
+
+.notes
+.result
