@@ -4,16 +4,7 @@
 #include<fstream>
 
 using namespace std;
-
 // g++ -std=c++17 load.cpp -o load 
-/*
-	a possible set of steps:
-		1. riscv gcc -c -> .o
-		2. ld(put all the needed objs together)
-		3. objcopy
-	input = binary file(.bin), output = 4 txt files(which can later be used by verilog's readmemh)
-*/
-
 int main(int argc, char **argv)
 {
 	if(argc < 2){
@@ -41,7 +32,7 @@ int main(int argc, char **argv)
 	uint8_t buffer;
 	while(1){
 		if(fread(&buffer, sizeof(uint8_t), 1, in) <= 0) break;
-		fprintf(output[cnt], "%08x\n", buffer);
+		fprintf(output[cnt], "%02x\n", buffer);
 		cnt = (cnt + 1) & 0b11;
 	}
 

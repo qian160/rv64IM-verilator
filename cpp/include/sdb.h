@@ -29,10 +29,10 @@ typedef struct {
 
 static std::unordered_map<char, cmd> cmd_table = {
     {'h',   cmd{"Display this information",               cmd_h,      "help [cmd]. default all"}},
-    {'c',   cmd{"Continue the execution of the program",  cmd_c,      "no argument"}},
-    {'q',   cmd{"Exit the program",                       cmd_q,      "no argument"}},
-    {'s',   cmd{"Step and execuate n instrction",         cmd_s,      "s [num], default 1"}},
-    {'i',   cmd{"show information",                       cmd_i,      "no arg now"}},
-    {'b',   cmd{"Breakpoint",                             cmd_b,      "b addr(use hex"}},
+    {'c',   cmd{"Continue program, after signal or breakpoint",  cmd_c,      "no argument"}},
+    {'q',   cmd{"quit the program",                       cmd_q,      "no argument"}},
+    {'s',   cmd{"step program",         cmd_s,      "s [num], default 1"}},
+    {'i',   cmd{"List of all registers and their contents",                       cmd_i,      "no argument"}},
+    {'b',   cmd{"breakpoint",                             cmd_b,      "b addr(todo)"}},
     //{'w',   cmd{"watchpoint, add or delete",              cmd_w,      "w a expr, w d no"}}
 };

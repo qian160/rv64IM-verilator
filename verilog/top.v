@@ -1,30 +1,61 @@
-module top(input clock, input reset, output [63:0]pc_o, output reg [31:0]inst_o);
-    // low-order 4-way interleave memory
-    // size = 4*2^18 = 1MB
-    reg [7:0] mem0 [0:(1<<18-1)];
-    reg [7:0] mem1 [0:(1<<18-1)];
-    reg [7:0] mem2 [0:(1<<18-1)];
-    reg [7:0] mem3 [0:(1<<18-1)];
-    reg [63:0 ] pc;
-    initial begin
-        $readmemh("./img0", mem0);
-        $readmemh("./img1", mem1);
-        $readmemh("./img2", mem2);
-        $readmemh("./img3", mem3);
-        $display("hello world!");
-    end
+`include "macro.v"
+module top(input clock, input reset, output [63:0] pc_o, output reg [31:0]inst_o);
 
-    always @(posedge clock)   begin
-        if (reset)
-            pc <= 64'h80000000;
-        else 
-            pc <= pc + 4;
-    end
+    assign inst_o = MEMORY.inst_o;
+    assign pc_o = IF.pc_o;
 
-    always @(*) begin
-        inst_o = {mem3[pc/4], mem2[pc/4], mem1[pc/4], mem0[pc/4]};
-    end
+    ifetch IF(
+        .clock(clock),
+        .reset(reset),
+        .inst_i(MEMORY.inst_o),
+    );
 
-    assign pc_o = pc;
+    id ID(
+        .inst_i(IF.inst_o),
+        .pc_i(IF.pc_o),
+        .rs1val_i(RF.rdata1_o),
+        .rs2val_i(RF.rdata2_o),
+    );
+
+    ex EX(
+        .operand1_i(ID.operand1_o),
+        .operand2_i(ID.operand2_o),
+        .rf_rd_i(ID.rd_o),
+        .aluop_i(ID.aluop_o),
+        .rf_wen_i(ID.rf_wen_o),
+        .exit_i(ID.exit_o),
+        .pc_i(ID.pc_o),
+    );
+
+    mem MEM(
+        .rf_wen_i(EX.rf_wen_o),
+        .rf_rd_i(EX.rf_rd_o),
+        .aluout_i(EX.aluout_o),
+        .pc_i(EX.pc_o),       // bug
+        .exit_i(EX.exit_o),
+    );
+
+    wb WB(
+        .rf_wdata_i(MEM.rf_wdata_o),
+        .rf_wen_i(MEM.rf_wen_o),
+        .rf_rd_i(MEM.rf_rd_o),
+        .exit_i(MEM.exit_o),
+        .pc_i(MEM.pc_o),
+        .a0_i(RF.a0_o),
+    );
+
+    memory MEMORY(
+        .pc_i(IF.pc_o),
+    );
+
+    regfile RF(
+        .clock(clock),
+        .reset(reset),
+        .rs1_i(ID.rs1_o),
+        .rs2_i(ID.rs2_o),
+        .wen_i(WB.rf_wen_o),
+        .rd_i(WB.rf_rd_o),
+        .wdata_i(WB.rf_wdata_o),
+    );
 
 endmodule
