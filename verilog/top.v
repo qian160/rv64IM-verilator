@@ -31,8 +31,9 @@ module top(input clock, input reset, output [63:0] pc_o, output reg [31:0]inst_o
         .rf_wen_i(EX.rf_wen_o),
         .rf_rd_i(EX.rf_rd_o),
         .aluout_i(EX.aluout_o),
-        .pc_i(EX.pc_o),       // bug
+        .pc_i(EX.pc_o),
         .exit_i(EX.exit_o),
+        .load_data_i(0),
     );
 
     wb WB(
