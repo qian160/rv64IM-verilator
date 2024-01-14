@@ -63,6 +63,7 @@
 
 
 // funct3
+// arith-i
 `define FCT3_ADDI       3'd0
 `define FCT3_SLLI       3'd1
 `define FCT3_SLTI       3'd2
@@ -71,12 +72,25 @@
 `define FCT3_SRLI_SRAI  3'd5   // funct7 differs
 `define FCT3_ORI        3'd6
 `define FCT3_ANDI       3'd7
+// arith-r
+`define FCT3_ADD_SUB    3'd0
+`define FCT3_SLL        3'd1
+`define FCT3_SLT        3'd2
+`define FCT3_SLTU       3'd3
+`define FCT3_XOR        3'd4
+`define FCT3_SRL_SRA    3'd5
+`define FCT3_OR         3'd6
+`define FCT3_AND        3'd7
 
 // funct7
+// arith-i
 `define FCT7_SRAI   7'h20
 `define FCT7_SRLI   7'h00
-
-
+// arith-r
+`define FCT7_ADD    7'h00
+`define FCT7_SUB    7'h20
+`define FCT7_SRL    7'h00
+`define FCT7_SRA    7'h20
 // functions
 // sign-extend. N >= M 
 `define SEXT(in, from, to) \

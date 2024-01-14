@@ -65,31 +65,23 @@ module id(
                 operand1_o = rs1val_i;
                 operand2_o = `SEXT(immI, 12, 64);
                 case (funct3)
-                    `FCT3_ADDI:   begin
-                        aluop_o = `ALU_ADD;
-                    end
+                    `FCT3_ADDI: aluop_o = `ALU_ADD;
+                    `FCT3_SLTI: aluop_o = `ALU_SLT;
+                    `FCT3_SLTIU:aluop_o = `ALU_SLTU;
+                    `FCT3_XORI: aluop_o = `ALU_XOR;
                     `FCT3_SLLI: begin
                         aluop_o = `ALU_SLL;
-                        operand2_o = immI[4:0];
-                    end
-                    `FCT3_SLTI: begin
-                        aluop_o = `ALU_SLT;
-                    end
-                    `FCT3_SLTIU:    begin
-                        aluop_o = `ALU_SLTU;
-                    end
-                    `FCT3_XORI: begin
-                        aluop_o = `ALU_XOR;
+                        operand2_o = immI[5:0];
                     end
                     `FCT3_SRLI_SRAI:    begin
                         case (funct7)
                             `FCT7_SRAI: begin
                                 aluop_o = `ALU_SRA;
-                                operand2_o = immI[4:0];
+                                operand2_o = immI[5:0];
                             end
                             `FCT7_SRLI: begin
                                 aluop_o = `ALU_SRL;
-                                operand2_o = immI[4:0];
+                                operand2_o = immI[5:0];
                             end
                             default:    $display("");
                         endcase
@@ -97,6 +89,39 @@ module id(
                     default: warn(pc_i, inst_i);
                 endcase
             end // arith-i
+
+            `ARITH_R:   begin
+                rf_wen_o = 1;
+                operand1_o = rs1val_i;
+                operand2_o = rs2val_i;
+                case (funct3)
+                    `FCT3_XOR:  aluop_o = `ALU_XOR;
+                    `FCT3_OR:   aluop_o = `ALU_OR;
+                    `FCT3_AND:  aluop_o = `ALU_AND;
+                    `FCT3_SLT:  aluop_o = `ALU_SLT;
+                    `FCT3_SLTU: aluop_o = `ALU_SLTU;
+                    `FCT3_SLL:  begin
+                        aluop_o = `ALU_SLL;
+                        operand2_o = rs2val_i[5:0];
+                    end
+                    `FCT3_ADD_SUB: begin
+                        case (funct7)
+                            `FCT7_ADD:  aluop_o = `ALU_ADD;
+                            `FCT7_SUB:  aluop_o = `ALU_SUB;
+                            default:    warn(pc_i, inst_i);
+                        endcase
+                    end
+                    `FCT3_SRL_SRA:  begin
+                        operand2_o = rs2val_i[5:0];
+                        case (funct7)
+                            `FCT7_SRL:  aluop_o = `ALU_SRL;
+                            `FCT7_SRA:  aluop_o = `ALU_SRA;
+                            default: warn(pc_i, inst_i);
+                        endcase
+                    end
+                    default:    warn(pc_i, inst_i);
+                endcase // funct3
+            end // arith-r
 
             `JAL:   begin   // J-type
                 // rd = pc + 4; pc += immJ
