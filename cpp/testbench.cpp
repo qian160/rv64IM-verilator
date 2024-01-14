@@ -35,18 +35,14 @@ static inline unique_ptr<cmd_info> get_cmd()
 	return info;
 }
 
-extern uint64_t nr_inst;
-extern uint64_t nr_stall;
-extern uint64_t nr_flush;
+extern Statistics statistics;
 
 using ld = long double;
-uint64_t start_time;
 void my_exit(int sig) 
 {
-	//SDL_Exit();
 	double seconds = tb.time();
 	char buf[128];
-	sprintf(buf, "finished in %lf ms, #insts = %ld", seconds * 1000, nr_inst);
+	sprintf(buf, "finished in %lf ms, #insts = %ld", seconds * 1000, statistics.nr_inst);
 
 	cout << buf << endl;
 	exit(0);
@@ -60,23 +56,19 @@ int main(int argc, char **argv)
 	string img_file("./tests/");
 
 	if(argc < 2){
-		cout << Yellow("no image is given, using the default one\n") << endl;
-		img_file += "add.bin";
+		cout << "need an argument" << endl;
+		return 0;
 	}
-	else
-		img_file += argv[1];
+
+	img_file += argv[1];
+
 	tb.reset();
-	IFDEF(TRACE_EN, tb.trace("./wave.vcd"));
-	// not supported yet
-	IFDEF(DIFFTEST_ENABLE, init_difftest());
 	tb.trace("./wave.vcd");
 	init_sdb();
-	char buf[32];
 	//cmd_c("-1");
 	cout << "welcome" << endl;
 	while(!Verilated::gotFinish()){
-		disassemble(buf, sizeof(buf), top->pc_o, (uint8_t *)&top->inst_o, 4);
-		cout << "(0x" << top -> pc_o << ")" << top->inst_o << ":\t" << buf;
+		cout << "(0x" << top -> pc_o << ")";
 		unique_ptr<cmd_info> cmd = get_cmd();
 		if(!cmd) continue;
 		cmd -> name |= 0x20;

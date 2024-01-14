@@ -1,4 +1,5 @@
-`include "macro.v"
+`include "define.v"
+import "DPI-C" function void set_mem_ptr(input logic [63:0] a[]);
 module memory(
     input [63:0]        pc_i,
     output reg [31:0]   inst_o
@@ -6,23 +7,16 @@ module memory(
 
     wire [63:0] pc_off;
     assign pc_off = pc_i - `PC_INIT;
-    // low-order 4-way interleave memory
-    // size = 4*2^18 = 1MB
-    reg [7:0] mem0 [0:(1<<18-1)];
-    reg [7:0] mem1 [0:(1<<18-1)];
-    reg [7:0] mem2 [0:(1<<18-1)];
-    reg [7:0] mem3 [0:(1<<18-1)];
+    // size = 2^20 = 1MB
+    reg [7:0] mem [0:((1<<20)-1)];
 
     initial begin
-        $readmemh("./img0", mem0);
-        $readmemh("./img1", mem1);
-        $readmemh("./img2", mem2);
-        $readmemh("./img3", mem3);
+        $readmemh("./img", mem);
+        set_mem_ptr(mem);
         $display("hello world!");
     end
 
     always @(*) begin
-        inst_o = {mem3[pc_off/4], mem2[pc_off/4], mem1[pc_off/4], mem0[pc_off/4]};
+        inst_o = {mem[pc_off+3], mem[pc_off+2], mem[pc_off+1], mem[pc_off]};
     end
-
 endmodule

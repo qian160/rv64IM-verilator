@@ -62,10 +62,26 @@
 //store op
 
 
+// funct3
+`define FCT3_ADDI       3'd0
+`define FCT3_SLLI       3'd1
+`define FCT3_SLTI       3'd2
+`define FCT3_SLTIU      3'd3
+`define FCT3_XORI       3'd4
+`define FCT3_SRLI_SRAI  3'd5   // funct7 differs
+`define FCT3_ORI        3'd6
+`define FCT3_ANDI       3'd7
+
+// funct7
+`define FCT7_SRAI   7'h20
+`define FCT7_SRLI   7'h00
+
+
+// functions
 // sign-extend. N >= M 
 `define SEXT(in, from, to) \
     {{(to-from){in[from-1]}}, in}
 
-// sign-extend. N >= M 
+// zero-extend. N >= M 
 `define ZEXT(in, from, to) \
     {{(to-from){1'b0}, in}

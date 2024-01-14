@@ -23,7 +23,6 @@ scripts/trm_init.o: scripts/trm_init.c
 lib/lib.o: lib/lib.c
 	@$(CC) -c $(CFLAGS) -c -o $@ $<
 
-# make build img=xxx(e.g. img=add)
 build: $(LINKAGE)
 	$(CC) -c $(CFLAGS) $(NAME).c
 	$(LD) -o $(NAME).elf $(LDFLAGS) --start-group $(NAME).o $(LINKAGE) --end-group

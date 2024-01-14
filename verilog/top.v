@@ -1,4 +1,4 @@
-`include "macro.v"
+`include "define.v"
 module top(input clock, input reset, output [63:0] pc_o, output reg [31:0]inst_o);
 
     assign inst_o = MEMORY.inst_o;
@@ -8,6 +8,8 @@ module top(input clock, input reset, output [63:0] pc_o, output reg [31:0]inst_o
         .clock(clock),
         .reset(reset),
         .inst_i(MEMORY.inst_o),
+        .branch_i(ID.branch_o),
+        .new_pc_i(ID.new_pc_o),
     );
 
     id ID(

@@ -1,4 +1,4 @@
-.PHONY: all run gdb clean latest $(ALL) test
+.PHONY: all run clean $(ALL) 
 
 RESULT = .result
 
@@ -17,14 +17,7 @@ all: $(addprefix Makefile., $(ALL))
 
 $(ALL): %: Makefile.%
 
-# usage:
-# 1.make makefile.xxx
-#	make -f makefile.xxx build
-# 2.make all
 Makefile.%: %.c $(LINKAGE)
-#	@/bin/echo -e "NAME = $*\ninclude scripts/Makefile" > $@
-#	@if make -s -f $@ build; then \
-
 	@if make -s -f scripts/Makefile NAME=$* build; then \
 		printf "[%14s] $(COLOR_GREEN)PASS!$(COLOR_NONE)\n" $* >> $(RESULT); \
 	else \

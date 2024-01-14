@@ -16,7 +16,7 @@ int main(int argc, char **argv)
 
 	FILE * in = fopen(img_file.c_str(), "rb");
 	assert(in);	
-
+/*
 	FILE * output[4] {
 		fopen("./img0", "w"),
 		fopen("./img1", "w"),
@@ -27,16 +27,16 @@ int main(int argc, char **argv)
 	for(auto &p: output){
 		assert(p);
 	}
+*/
+	FILE *output(fopen("./img", "w"));
+	assert(output);
 
-	uint8_t cnt = 0;
 	uint8_t buffer;
 	while(1){
 		if(fread(&buffer, sizeof(uint8_t), 1, in) <= 0) break;
-		fprintf(output[cnt], "%02x\n", buffer);
-		cnt = (cnt + 1) & 0b11;
+		fprintf(output, "%02x\n", buffer);
 	}
 
-	for(int i = 0; i < 4; i ++)
-		fclose(output[i]);
+	fclose(output);
 	fclose(in);
 }

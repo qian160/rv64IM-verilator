@@ -1,4 +1,4 @@
-`include "macro.v"
+`include "define.v"
 module ex(
     // alu input
     input [63:0] operand1_i,
@@ -22,6 +22,14 @@ module ex(
     always @*   begin
         case (aluop_i)
             `ALU_ADD: aluout_o = operand1_i + operand2_i;
+            `ALU_XOR: aluout_o = operand1_i ^ operand2_i;
+            `ALU_OR:  aluout_o = operand1_i | operand2_i;
+            `ALU_AND: aluout_o = operand1_i & operand2_i;
+            `ALU_SLL: aluout_o = operand1_i << operand2_i;
+            `ALU_SRL: aluout_o = operand1_i >> operand2_i;
+            `ALU_SRA: aluout_o = operand1_i >>> operand2_i;
+            `ALU_SLT: aluout_o = ($signed(operand1_i) < $signed(operand2_i))? 64'b1: 64'b0;
+            `ALU_SLTU:aluout_o = (operand1_i < operand2_i)? 64'b1: 64'b0;
             default: aluout_o = operand1_i + operand2_i;
         endcase
     end

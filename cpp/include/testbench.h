@@ -1,6 +1,7 @@
 #include <verilated_vcd_c.h>
 #include "verilated_dpi.h"
 #include <string>
+#include <vector>
 #include <iostream>
 #include <memory>
 #include <verilated.h>

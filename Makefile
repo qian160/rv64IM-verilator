@@ -1,8 +1,5 @@
 .PHONY : run clean test test_all build
 
-CXXFLAGS += $(shell llvm-config-11 --cxxflags) -fPIE
-LIBS += $(shell llvm-config-11 --libs)
-
 CC	= g++
 DEST	= ./obj_dir
 VSRC	= $(addprefix ./verilog/, $(shell ls ./verilog | grep \.\*v))   #.v or .sv
@@ -11,11 +8,9 @@ INC 	= $(addprefix ./cpp/include/, $(shell ls ./cpp/include))
 # -I is for verilog, -CFLAGS -I for cpp
 VFLAGS	= --cc --exe --trace -Wno-lint --build --top top \
 	-LDFLAGS -ldl \
-	-O3 -Iverilog \
+	-O3 -Iverilog -j 8\
 	-CFLAGS -I$(shell llvm-config-11 --includedir) \
 	-LDFLAGS $(shell llvm-config-11 --libs)
-
-DIFFTEST    = $(NEMU_HOME)/build/riscv64-nemu-interpreter-so
 
 COLOR_RED    = \033[1;31m
 COLOR_GREEN  = \033[1;32m
@@ -27,7 +22,6 @@ print_green  = @printf "$(COLOR_GREEN)$(1)$(COLOR_NONE)\n"
 print_red 	 = @printf "$(COLOR_RED)$(1)$(COLOR_NONE)\n"
 
 #usage: make run [img=xxx]
-#need to prepare for an imgfile first
 run: $(CPPSRC) $(VSRC) $(INC)
 ifndef img
 	$(error img is not defined. usage: make run img=xxx)
