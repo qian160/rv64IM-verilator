@@ -16,19 +16,8 @@ int main(int argc, char **argv)
 
 	FILE * in = fopen(img_file.c_str(), "rb");
 	assert(in);	
-/*
-	FILE * output[4] {
-		fopen("./img0", "w"),
-		fopen("./img1", "w"),
-		fopen("./img2", "w"),
-		fopen("./img3", "w"),
-	};
 
-	for(auto &p: output){
-		assert(p);
-	}
-*/
-	FILE *output(fopen("./img", "w"));
+	FILE *output(fopen("/home/s081/Downloads/projects/cpu/img", "w"));
 	assert(output);
 
 	uint8_t buffer;

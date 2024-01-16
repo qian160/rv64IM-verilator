@@ -57,7 +57,7 @@ module mem(
                         `SEXT({mem[start+3], mem[start+2], mem[start+1], mem[start]}, 32, 64);
                 2'd3:   load_data = {mem[start+7], mem[start+6], mem[start+5], mem[start+4], mem[start+3], mem[start+2], mem[start+1], mem[start]};
             endcase
-            $display("(%x) [x%d] <= %x [%x]", pc_i, rd_i, load_data, aluout_i);
+            //$display("(%x) [x%d] <= %x [%x]", pc_i, rd_i, load_data, aluout_i);
         end
     end
 
@@ -69,7 +69,7 @@ module mem(
                 2'd2:   {mem[start+3], mem[start+2], mem[start+1], mem[start]} <= sdata_i[31:0];
                 2'd3:   {mem[start+7], mem[start+6], mem[start+5], mem[start+4], mem[start+3], mem[start+2], mem[start+1], mem[start]} <= sdata_i;
             endcase
-            $display("(%x) %x => Mem[%x]", pc_i, sdata_i, aluout_i);
+            //$display("(%x) %x => Mem[%x]", pc_i, sdata_i, aluout_i);
         end
     end
 

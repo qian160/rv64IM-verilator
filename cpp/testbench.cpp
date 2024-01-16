@@ -36,6 +36,7 @@ static inline unique_ptr<cmd_info> get_cmd()
 }
 
 extern Statistics statistics;
+extern CPU_state state;
 
 using ld = long double;
 void my_exit(int sig) 
@@ -45,28 +46,20 @@ void my_exit(int sig)
 	sprintf(buf, "finished in %lf ms, #insts = %ld", seconds * 1000, statistics.nr_inst);
 	cout << buf << endl;
 	cout << "simulation frequency = " << statistics.nr_inst / seconds << " inst/s" << endl;
-	exit(0);
+	exit(state.cpu_gpr[10]);	// x10 = a0
 }
 
 int main(int argc, char **argv) 
 {
-	cout << endl << endl;
 	Verilated::commandArgs(argc, argv);
 	signal(SIGINT, my_exit);
-	string img_file("./tests/");
-
-	if(argc < 2){
-		cout << "need an argument" << endl;
-		return 0;
-	}
-
-	img_file += argv[1];
 
 	tb.reset();
 	tb.trace("./wave.vcd");
 	init_sdb();
 	//cmd_c("-1");
 	cout << "welcome" << endl;
+	cmd_c("-1");
 	while(!Verilated::gotFinish()){
 		cout << "(0x" << top -> pc_o << ")";
 		unique_ptr<cmd_info> cmd = get_cmd();

@@ -32,6 +32,8 @@ module ex(
         case (aluop_i)
             `ALU_ADD: aluout_o = operand1_i + operand2_i;
             `ALU_SUB: aluout_o = operand1_i - operand2_i;
+            `ALU_MUL: aluout_o = operand1_i * operand2_i;
+            `ALU_DIV: aluout_o = operand1_i / operand2_i;
             `ALU_XOR: aluout_o = operand1_i ^ operand2_i;
             `ALU_OR:  aluout_o = operand1_i | operand2_i;
             `ALU_AND: aluout_o = operand1_i & operand2_i;
