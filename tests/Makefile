@@ -29,7 +29,7 @@ Makefile.%: %.c $(LINKAGE)
 	$(call print_yellow,loading img $*... )
 	@../utils/load $*.bin
 	$(call print_green,start simulating... )
-	@../obj_dir/Vtop \
+	@../obj_dir/Vtop 114514\
 		&& printf "[%14s] $(COLOR_GREEN)PASS!$(COLOR_NONE)\n" $* >> $(RESULT)\
 		|| printf "[%14s] $(COLOR_RED)FAIL!$(COLOR_NONE)\n" $* >> $(RESULT)
 #usage 1. make Makefile.xxx 2. make test_all

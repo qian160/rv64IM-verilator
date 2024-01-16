@@ -30,7 +30,7 @@ module mem(
     reg [7:0] mem [0:((1<<20)-1)];
 
     initial begin
-        $readmemh("./img", mem);
+        $readmemh("/home/s081/Downloads/projects/cpu/img", mem);
         set_mem_ptr(mem);
         $display("hello world!");
     end

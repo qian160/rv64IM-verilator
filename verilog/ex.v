@@ -41,10 +41,7 @@ module ex(
             `ALU_SRL: aluout_o = operand1_i >> operand2_i;
             `ALU_SRA: aluout_o = operand1_i >>> operand2_i;
             `ALU_SLT: aluout_o = ($signed(operand1_i) < $signed(operand2_i))? 64'b1: 64'b0;
-            `ALU_SLTU:  begin
-                aluout_o = (operand1_i < operand2_i)? 64'b1: 64'b0;
-                $display("stlu: src1 = %x, src2 = %x", operand1_i[31:0], operand2_i[31:0]);
-            end
+            `ALU_SLTU: aluout_o = (operand1_i < operand2_i)? 64'b1: 64'b0;
             // rv64
             `ALU_ADDW:  aluout_o = `SEXT({operand1_i[31:0] + operand2_i[31:0]}, 32, 64);
             `ALU_SUBW:  aluout_o = `SEXT({operand1_i[31:0] - operand2_i[31:0]}, 32, 64);
