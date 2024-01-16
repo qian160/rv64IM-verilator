@@ -2,24 +2,24 @@
 // special instructions
 `define EBREAK  32'h100073
 // init values
-`define PC_INIT 64'h80000000
+`define PMEM_START  64'h80000000
 
-//opcode
-`define ARITH_R   7'b0110011
-`define ARITH_I   7'b0010011
-`define LOAD      7'b0000011
-`define STORE     7'b0100011
-`define BRANCH    7'b1100011
-`define JAL       7'b1101111
-`define JALR      7'b1100111
-`define LUI       7'b0110111
-`define AUIPC     7'b0010111
-`define SYS       7'b1110011
+/*  opcode  */
+`define OPCODE_ARITH_R   7'b0110011
+`define OPCODE_ARITH_I   7'b0010011
+`define OPCODE_LOAD      7'b0000011
+`define OPCODE_STORE     7'b0100011
+`define OPCODE_BRANCH    7'b1100011
+`define OPCODE_JAL       7'b1101111
+`define OPCODE_JALR      7'b1100111
+`define OPCODE_LUI       7'b0110111
+`define OPCODE_AUIPC     7'b0010111
+`define OPCODE_SYS       7'b1110011
 // rv64 extension
-`define ARITH_64_R  7'b0111011
-`define ARITH_64_I  7'b0011011
+`define OPCODE_RV64_ARITH_R  7'b0111011
+`define OPCODE_RV64_ARITH_I  7'b0011011
 
-// aluop.
+/*  aluop   */
 // some R-type and I-type instructions just use the same aluop
 // e.g. addi and add: they just share aluop = add
 // rv32i
@@ -56,13 +56,7 @@
 `define ALU_DIVUW   5'd27
 `define ALU_REMUW   5'd28
 
-//load op
-
-
-//store op
-
-
-// funct3
+/*  funct3  */
 // arith-i
 `define FCT3_ADDI       3'd0
 `define FCT3_SLLI       3'd1
@@ -81,21 +75,62 @@
 `define FCT3_SRL_SRA    3'd5
 `define FCT3_OR         3'd6
 `define FCT3_AND        3'd7
+// rv64 arith-i
+`define FCT3_ADDIW          3'd0
+`define FCT3_SLLIW          3'd1
+`define FCT3_SRAIW_SRLIW    3'd5
+// rv64 arith-r
+`define FCT3_ADDW_SUBW  3'd0
+`define FCT3_SLLW       3'd1
+`define FCT3_SRLW_SRAW  3'd5
 
-// funct7
+// load
+`define FCT3_LB         3'd0
+`define FCT3_LH         3'd1
+`define FCT3_LW         3'b2
+`define FCT3_LD         3'b3    // rv64i
+`define FCT3_LBU        3'd4
+`define FCT3_LHU        3'd5
+`define FCT3_LWU        3'd6    // rv64i
+// store
+`define FCT3_SB         3'b0
+`define FCT3_SH         3'b1
+`define FCT3_SW         3'b2
+`define FCT3_SD         3'b3    // rv64i
+// branch
+`define FCT3_BEQ        3'd0
+`define FCT3_BNE        3'd1
+`define FCT3_BLT        3'd4
+`define FCT3_BGE        3'd5
+`define FCT3_BLTU       3'd6
+`define FCT3_BGEU       3'd7
+
+/*  funct7  */
+// add/sub srl/sra.
+// determined by funct7[5]
 // arith-i
-`define FCT7_SRAI   7'h20
-`define FCT7_SRLI   7'h00
-// arith-r
-`define FCT7_ADD    7'h00
-`define FCT7_SUB    7'h20
-`define FCT7_SRL    7'h00
-`define FCT7_SRA    7'h20
+//`define FCT7_SRAI   7'h20       // a:20 l: 0
+//`define FCT7_SRLI   7'h00
+//// arith-r
+//`define FCT7_ADD    7'h00       // sub: 20 add: 0
+//`define FCT7_SUB    7'h20
+//`define FCT7_SRL    7'h00       // a: 20 l: 0
+//`define FCT7_SRA    7'h20
+//// RV64
+//// arith-r
+//`define FCT7_ADDW   7'h00       // sub: 20 add: 0
+//`define FCT7_SUBW   7'h20
+//`define FCT7_SRLW   7'h00       // a: 20 l: 0
+//`define FCT7_SRAW   7'h20
+//// arith-i
+//`define FCT7_SRLIW  7'h00       // a: 20 l: 0 ( no subi or subiw)
+//`define FCT7_SRAIW  7'h20
+
 // functions
 // sign-extend. N >= M 
 `define SEXT(in, from, to) \
-    {{(to-from){in[from-1]}}, in}
+    {{(to-from){{in}[from-1]}}, {in}}
 
 // zero-extend. N >= M 
 `define ZEXT(in, from, to) \
-    {{(to-from){1'b0}, in}
+    {{(to-from){1'b0}}, {in}}

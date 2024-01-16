@@ -43,8 +43,8 @@ void my_exit(int sig)
 	double seconds = tb.time();
 	char buf[128];
 	sprintf(buf, "finished in %lf ms, #insts = %ld", seconds * 1000, statistics.nr_inst);
-
 	cout << buf << endl;
+	cout << "simulation frequency = " << statistics.nr_inst / seconds << " inst/s" << endl;
 	exit(0);
 }
 

@@ -6,7 +6,7 @@ VSRC	= $(addprefix ./verilog/, $(shell ls ./verilog | grep \.\*v))   #.v or .sv
 CPPSRC	= $(addprefix ./cpp/, $(shell ls ./cpp | grep cpp))
 INC 	= $(addprefix ./cpp/include/, $(shell ls ./cpp/include))
 # -I is for verilog, -CFLAGS -I for cpp
-VFLAGS	= --cc --exe --trace -Wno-lint --build --top top \
+VFLAGS	= --cc --exe --trace -Wno-lint --build --top top\
 	-LDFLAGS -ldl \
 	-O3 -Iverilog -j 8\
 	-CFLAGS -I$(shell llvm-config-11 --includedir) \
@@ -22,6 +22,7 @@ print_green  = @printf "$(COLOR_GREEN)$(1)$(COLOR_NONE)\n"
 print_red 	 = @printf "$(COLOR_RED)$(1)$(COLOR_NONE)\n"
 
 #usage: make run [img=xxx]
+# e.g. make run img=add
 run: $(CPPSRC) $(VSRC) $(INC)
 ifndef img
 	$(error img is not defined. usage: make run img=xxx)

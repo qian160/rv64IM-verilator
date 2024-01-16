@@ -35,8 +35,13 @@ bool in_pmem(uint64_t addr) {
 
 void dump_gpr() {
 	for (int i = 0; i < 32; i++) {
-        printf("\033[1;33m[%3s] = %-16lx%c\033[0m", regs[i], state.cpu_gpr[i], i & 0b1? '\n' : '\t');
+        printf("[%3s] = %-16lx%c", regs[i], state.cpu_gpr[i], i & 0b1? '\n' : '\t');
 	}
+}
+
+bool breakpoint_exists(uint64_t addr) {
+    auto b = state.breakpoints;
+    return std::find(b.begin(), b.end(), addr) != b.end();
 }
 
 int cmd_s(string steps)  {
@@ -50,7 +55,9 @@ int cmd_s(string steps)  {
 }
 
 int cmd_c(string args) {
-    cmd_s("-1");
+    while (!Verilated::gotFinish() && !breakpoint_exists(top->pc_o))
+        cmd_s("1");
+    cout << "reach breakpoint at " << top->pc_o << endl;
     return 0;
 }
 
@@ -76,8 +83,12 @@ int cmd_i(string arg) {
 // hex addr
 int cmd_b(string arg) {
     uint64_t addr = strtoll(arg.c_str(), NULL, 0);
-    state.breakpoints.push_back(addr);
-    cout << "breakpoint set at: 0x" << addr << endl;
+    if (in_pmem(addr)) {
+        state.breakpoints.push_back(addr);
+        cout << "breakpoint set at: 0x" << addr << endl;
+    }
+    else 
+        cout << "bad address" << endl;
     return 0;
 }
 
@@ -94,11 +105,11 @@ int cmd_x(string arg) {
     switch (f) {
         case 'h':
             for (uint64_t i = 0; i < n; i++)
-                printf("%x%c", state.mem_ptr[addr+i-pmem_start], ((i+1)%4) == 0? '\n': ' ');
+                printf("%02x%c", state.mem_ptr[addr+i-pmem_start], ((i+1)%4) == 0? '\n': ' ');
             break;
         case 'd':
             for (uint64_t i = 0; i < n; i++)
-                printf("%d%c", state.mem_ptr[addr+i-pmem_start], ((i+1)%4) == 0? '\n': ' ');
+                printf("%02d%c", state.mem_ptr[addr+i-pmem_start], ((i+1)%4) == 0? '\n': ' ');
             break;
         default:
             printf("expect format: {d/h}\n");

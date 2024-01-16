@@ -1,4 +1,4 @@
-.PHONY: all run clean $(ALL) 
+.PHONY: all run clean test_all $(ALL) 
 
 RESULT = .result
 
@@ -23,11 +23,14 @@ Makefile.%: %.c $(LINKAGE)
 	else \
 		printf "[%14s] $(COLOR_RED)FAIL!$(COLOR_NONE)\n" $* >> $(RESULT); \
 	fi
-#	-@rm -f Makefile.$*
 
 run: all
 	@cat $(RESULT)
 	@rm $(RESULT)
+
+test.%:	Makefile.%
+
+test_all:
 
 clean:
 	@rm -rf *.bin *.elf *.txt
