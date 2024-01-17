@@ -26,34 +26,43 @@ module ex(
     output [63:0]       pc_o,
     output exit_o
 );
-
-    reg [63:0] aluout;
+    /* verilator lint_off SELRANGE */
+    // what's the difference between signed & unsigned operation? ...
     always @*   begin
         case (aluop_i)
-            `ALU_ADD: aluout_o = operand1_i + operand2_i;
-            `ALU_SUB: aluout_o = operand1_i - operand2_i;
-            `ALU_MUL: aluout_o = operand1_i * operand2_i;
-            `ALU_DIV: aluout_o = operand1_i / operand2_i;
-            `ALU_XOR: aluout_o = operand1_i ^ operand2_i;
-            `ALU_OR:  aluout_o = operand1_i | operand2_i;
-            `ALU_AND: aluout_o = operand1_i & operand2_i;
-            `ALU_SLL: aluout_o = operand1_i << operand2_i;
-            `ALU_SRL: aluout_o = operand1_i >> operand2_i;
-            `ALU_SRA: aluout_o = operand1_i >>> operand2_i;
-            `ALU_SLT: aluout_o = ($signed(operand1_i) < $signed(operand2_i))? 64'b1: 64'b0;
-            `ALU_SLTU: aluout_o = (operand1_i < operand2_i)? 64'b1: 64'b0;
-            // rv64
+            // rv32i
+            `ALU_ADD:   aluout_o = operand1_i + operand2_i;
+            `ALU_SUB:   aluout_o = operand1_i - operand2_i;
+            `ALU_XOR:   aluout_o = operand1_i ^ operand2_i;
+            `ALU_OR:    aluout_o = operand1_i | operand2_i;
+            `ALU_AND:   aluout_o = operand1_i & operand2_i;
+            `ALU_SLL:   aluout_o = operand1_i << operand2_i[5:0];
+            `ALU_SRL:   aluout_o = operand1_i >> operand2_i[5:0];
+            `ALU_SRA:   aluout_o = $signed(operand1_i) >>> operand2_i[5:0];
+            `ALU_SLT:   aluout_o = ($signed(operand1_i) < $signed(operand2_i))? 64'b1: 64'b0;
+            `ALU_SLTU:  aluout_o = (operand1_i < operand2_i)? 64'b1: 64'b0;
+            // rv32m
+            `ALU_MUL:   aluout_o = {operand1_i * operand2_i}[63:0];
+            //`ALU_MULH:  aluout_o = {$signed(operand1_i) * $signed(operand2_i)}[127:64];
+            `ALU_MULH:  aluout_o = {operand1_i * operand2_i}[127:64];
+            `ALU_MULHU: aluout_o = {operand1_i * operand2_i}[127:64];
+            `ALU_MULHSU:aluout_o = {$signed(operand1_i) * operand2_i}[127:64];
+            `ALU_DIV:   aluout_o = operand1_i / operand2_i;
+            `ALU_DIVU:  aluout_o = operand1_i / operand2_i;
+            `ALU_REM:   aluout_o = operand1_i % operand2_i;
+            `ALU_REMU:  aluout_o = operand1_i % operand2_i;
+            // rv64i
             `ALU_ADDW:  aluout_o = `SEXT({operand1_i[31:0] + operand2_i[31:0]}, 32, 64);
             `ALU_SUBW:  aluout_o = `SEXT({operand1_i[31:0] - operand2_i[31:0]}, 32, 64);
             `ALU_SLLW:  aluout_o = `SEXT({operand1_i[31:0] << operand2_i[4:0]}, 32, 64);
             `ALU_SRLW:  aluout_o = `SEXT({operand1_i[31:0] >> operand2_i[4:0]}, 32, 64);
-            `ALU_SRAW:  aluout_o = `SEXT({operand1_i[31:0] >>> operand2_i[4:0]}, 32, 64);
-
-            `ALU_MULW:$finish(pc_i);
-            `ALU_DIVW:$finish(pc_i);
-            `ALU_REMW:$finish(pc_i);
-            `ALU_DIVUW:$finish(pc_i);
-            `ALU_REMUW:$finish(pc_i);
+            `ALU_SRAW:  aluout_o = `SEXT({$signed(operand1_i[31:0]) >>> operand2_i[4:0]}, 32, 64);
+            // rv64m
+            `ALU_MULW:  aluout_o = `SEXT({operand1_i * operand2_i}[31:0], 32, 64);
+            `ALU_DIVW:  aluout_o = `SEXT({operand1_i / operand2_i}[31:0], 32, 64);
+            `ALU_REMW:  aluout_o = `SEXT({operand1_i % operand2_i}[31:0], 32, 64);
+            `ALU_DIVUW: aluout_o = `SEXT({operand1_i / operand2_i}[31:0], 32, 64);
+            `ALU_REMUW: aluout_o = `SEXT({operand1_i % operand2_i}[31:0], 32, 64);
             default: aluout_o = operand1_i + operand2_i;
         endcase
     end

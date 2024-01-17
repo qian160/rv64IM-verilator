@@ -47,7 +47,7 @@ void my_exit(int sig)
 	sprintf(buf, "finished in %lf ms, #insts = %ld", seconds * 1000, statistics.nr_inst);
 	cout << buf << endl;
 	cout << "simulation frequency = " << statistics.nr_inst / seconds << " inst/s" << endl;
-	dump_gpr();
+	//dump_gpr();
 	exit(state.cpu_gpr[10]);	// x10 = a0
 }
 
@@ -57,9 +57,11 @@ int main(int argc, char **argv)
 	signal(SIGINT, my_exit);
 	tb.reset();
 	init_sdb();
+
 	if (argc > 1)
 		#define TEST_ALL 1
 	IFDEF(TEST_ALL, cmd_c("-1"));
+
 	tb.trace("./wave.vcd");
 	cout << "welcome" << endl;
 

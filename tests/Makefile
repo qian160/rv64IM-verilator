@@ -38,6 +38,6 @@ test_all: all
 	@rm $(RESULT)
 
 clean:
-	@rm -rf *.bin *.elf *.txt wave.vcd img
-	@-find . -name "*.o" -type f -delete
+	rm -rf *.bin *.elf *.txt wave.vcd img
+	-find . -name "*.o" -type f -delete
 

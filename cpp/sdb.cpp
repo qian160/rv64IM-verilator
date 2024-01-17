@@ -35,7 +35,7 @@ bool in_pmem(uint64_t addr) {
 
 void dump_gpr() {
 	for (int i = 0; i < 32; i++) {
-        printf("[%3s] = %-16lx%c", regs[i], state.cpu_gpr[i], i & 0b1? '\n' : '\t');
+        printf("[%3s] = 0x%-16lx%c", regs[i], state.cpu_gpr[i], i & 0b1? '\n' : '\t');
 	}
 }
 
@@ -57,7 +57,8 @@ int cmd_s(string steps)  {
 int cmd_c(string args) {
     while (!Verilated::gotFinish() && !breakpoint_exists(top->pc_o))
         cmd_s("1");
-    cout << "reach breakpoint at " << top->pc_o << endl;
+    if (!Verilated::gotFinish())
+        cout << "reach breakpoint at " << top->pc_o << endl;
     return 0;
 }
 

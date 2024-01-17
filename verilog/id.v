@@ -65,11 +65,12 @@ module id(
         sdata_o  = 64'b0;
         branch_target_o = 64'b0;
 
+        // general decoding steps: opcode -> (funct7) -> funct3
+        // for I-type insts, due to the existance of imm field,
+        // we can not decode funct7 at first
         case (opcode)
             `OPCODE_ARITH_I:   begin   // I-type
                 // default values
-                // all the I-type insts use the same operands
-                // but those shift insts's immI need to be truncated
                 rf_wen_o = 1;
                 operand1_o = rs1val_i;
                 operand2_o = immI;
@@ -80,15 +81,9 @@ module id(
                     `FCT3_XORI: aluop_o = `ALU_XOR;
                     `FCT3_ANDI: aluop_o = `ALU_AND;
                     `FCT3_ORI:  aluop_o = `ALU_OR;
-                    `FCT3_SLLI: begin
-                        aluop_o = `ALU_SLL;
-                        operand2_o = immI[5:0];
-                    end
-                    `FCT3_SRLI_SRAI:    begin
-                        operand2_o = immI[5:0];
-                        aluop_o = funct7[5]? `ALU_SRA: `ALU_SRL;
-                    end
-                    default: warn(pc_i, inst_i);
+                    `FCT3_SLLI: aluop_o = `ALU_SLL;
+                    `FCT3_SRLI_SRAI:    aluop_o = funct7[5]? `ALU_SRA: `ALU_SRL;
+                    default:    warn(pc_i, inst_i);
                 endcase
             end // arith-i
 
@@ -97,25 +92,49 @@ module id(
                 rf_wen_o = 1;
                 operand1_o = rs1val_i;
                 operand2_o = rs2val_i;
-                case (funct3_o)
-                    `FCT3_XOR:  aluop_o = `ALU_XOR;
-                    `FCT3_OR:   aluop_o = `ALU_OR;
-                    `FCT3_AND:  aluop_o = `ALU_AND;
-                    `FCT3_SLT:  aluop_o = `ALU_SLT;
-                    `FCT3_SLTU: aluop_o = `ALU_SLTU;
-                    `FCT3_SLL:  begin
-                        aluop_o = `ALU_SLL;
-                        operand2_o = rs2val_i[5:0];
+                case (funct7)
+                    7'h00: begin        // most instruction
+                        case (funct3_o)
+                            `FCT3_ADD:  aluop_o = `ALU_ADD;
+                            `FCT3_SLL:  aluop_o = `ALU_SLL;
+                            `FCT3_SLT:  aluop_o = `ALU_SLT;
+                            `FCT3_SLTU: aluop_o = `ALU_SLTU;
+                            `FCT3_XOR:  aluop_o = `ALU_XOR;
+                            `FCT3_SRL:  aluop_o = `ALU_SRL;
+                            `FCT3_OR:   aluop_o = `ALU_OR;
+                            `FCT3_AND:  aluop_o = `ALU_AND;
+                            default:    warn(pc_i, inst_i);
+                        endcase
                     end
-                    `FCT3_ADD_SUB: begin
-                        aluop_o = funct7[5]? `ALU_SUB: `ALU_ADD;
+
+                    7'h01: begin        // M-extension
+                        case (funct3_o)
+                            // low, signed
+                            `FCT3_MUL:  aluop_o = `ALU_MUL;
+                            `FCT3_DIV:  aluop_o = `ALU_DIV;
+                            `FCT3_REM:  aluop_o = `ALU_REM;
+                            // low, unsigned
+                            `FCT3_DIVU: aluop_o = `ALU_DIVU;
+                            `FCT3_REMU: aluop_o = `ALU_REMU;
+                            // high, unsigned
+                            `FCT3_MULHU:aluop_o = `ALU_MULHU;
+                            // high, signed
+                            `FCT3_MULH: aluop_o = `ALU_MULH;
+                            // high, signed rs, unsigned rs2
+                            `FCT3_MULHSU:aluop_o = `ALU_MULHSU;
+                            default:    warn(pc_i, inst_i);
+                        endcase
                     end
-                    `FCT3_SRL_SRA:  begin
-                        operand2_o = rs2val_i[5:0];
-                        aluop_o = funct7[5]? `ALU_SRA: `ALU_SLL;
+
+                    7'h20: begin
+                        case (funct3_o)
+                            `FCT3_SUB:  aluop_o = `ALU_SUB;
+                            `FCT3_SRA:  aluop_o = `ALU_SRA;
+                            default:    warn(pc_i, inst_i);
+                        endcase
                     end
                     default:    warn(pc_i, inst_i);
-                endcase // funct3
+                endcase // funct7
             end // arith-r
 
             `OPCODE_RV64_ARITH_I: begin
@@ -126,7 +145,7 @@ module id(
                 case (funct3_o)
                     `FCT3_ADDIW:    aluop_o = `ALU_ADDW;
                     `FCT3_SLLIW:    aluop_o = `ALU_SLLW;
-                    `FCT3_SRAIW_SRLIW:
+                    `FCT3_SRLIW_SRAIW:
                         aluop_o = funct7[5]? `ALU_SRAW: `ALU_SRLW;
                     default:    warn(pc_i, inst_i);
                 endcase
@@ -137,12 +156,32 @@ module id(
                 rf_wen_o = 1'b1;
                 operand1_o = rs1val_i;
                 operand2_o = rs2val_i;
-                case (funct3_o)
-                    `FCT3_SLLW: aluop_o = `ALU_SLLW;
-                    `FCT3_SRLW_SRAW:
-                        aluop_o = funct7[5]? `ALU_SRA: `ALU_SRL;
-                    `FCT3_ADDW_SUBW:
-                        aluop_o = funct7[5]? `ALU_SUBW: `ALU_ADDW;
+                case (funct7)
+                    7'h00:  begin
+                        case (funct3_o)
+                            `FCT3_ADDW: aluop_o = `ALU_ADDW;
+                            `FCT3_SLLW: aluop_o = `ALU_SLLW;
+                            `FCT3_SRLW: aluop_o = `ALU_SRLW;
+                            default:    warn(pc_i, inst_i);
+                        endcase
+                    end
+                    7'h01:  begin   // rv64m
+                        case (funct3_o)
+                            `FCT3_MULW: aluop_o = `ALU_MULW;
+                            `FCT3_DIVW: aluop_o = `ALU_DIVW;
+                            `FCT3_DIVUW:aluop_o = `ALU_DIVUW;
+                            `FCT3_REMW: aluop_o = `ALU_REMW;
+                            `FCT3_REMUW:aluop_o = `ALU_REMUW;
+                            default:    warn(pc_i, inst_i);
+                        endcase
+                    end
+                    7'h20:  begin
+                        case (funct3_o)
+                            `FCT3_SUBW: aluop_o = `ALU_SUBW;
+                            `FCT3_SRAW: aluop_o = `ALU_SRAW;
+                            default:    warn(pc_i, inst_i);
+                        endcase
+                    end
                     default:    warn(pc_i, inst_i);
                 endcase
             end // rv64i arith-r
