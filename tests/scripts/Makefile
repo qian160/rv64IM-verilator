@@ -5,7 +5,7 @@ LD = riscv64-linux-gnu-ld
 OBJCOPY = riscv64-linux-gnu-objcopy
 OBJDUMP = riscv64-linux-gnu-objdump
 AS = riscv64-linux-gnu-as
-
+# -march=rv64imc
 COMMON_FLAGS  := -fno-pic -I./include -march=rv64im -mabi=lp64
 CFLAGS        += $(COMMON_FLAGS) -static -lc -mcmodel=medany -mstrict-align -fno-asynchronous-unwind-tables -fno-builtin -fno-stack-protector
 ASFLAGS       += $(COMMON_FLAGS)

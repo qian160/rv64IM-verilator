@@ -1,6 +1,8 @@
 // see https://msyksphinz-self.github.io/riscv-isadoc/html/ for details
 // special instructions
-`define EBREAK  32'h100073
+`define EBREAK      32'h100073
+`define C_EBREAK    16'h9002
+
 // init values
 `define PMEM_START  64'h80000000
 
@@ -132,10 +134,66 @@
 `define FCT3_BLTU       3'd6
 `define FCT3_BGEU       3'd7
 
+
+/*  rvc */
+/// opcode: magic numbers again...
+/*
+00: ?
+01: ?16 bit imm
+10: ?32 bit imm
+*/
+
+/*  funct4  */
+`define RVC_FCT4_JR     4'b1000 // rs2 = 0
+`define RVC_FCT4_JALR   4'b1001
+`define RVC_FCT4_MV     4'b1000
+`define RVC_FCT4_ADD    4'b1001
+
+/*  funct3  */
+// op = 00
+`define RVC_FCT3_ADDI4SPN   3'b000
+`define RVC_FCT3_LW         3'b010
+`define RVC_FCT3_LD         3'b011
+`define RVC_FCT3_SW         3'b110
+`define RVC_FCT3_SD         3'b111
+// op = 01
+`define RVC_FCT3_NOP        3'b000
+`define RVC_FCT3_ADDI       3'b000
+`define RVC_FCT3_JAL        3'b001
+`define RVC_FCT3_ADDIW      3'b001
+`define RVC_FCT3_LI         3'b010
+`define RVC_FCT3_ADDI16SP   3'b011
+`define RVC_FCT3_LUI        3'b011
+`define RVC_FCT3_SRLI       3'b100
+`define RVC_FCT3_SRAI       3'b100
+`define RVC_FCT3_ANDI       3'b100
+`define RVC_FCT3_SUB        3'b100
+`define RVC_FCT3_XOR        3'b100
+`define RVC_FCT3_OR         3'b100
+`define RVC_FCT3_AND        3'b100
+`define RVC_FCT3_SUBW       3'b100
+`define RVC_FCT3_ADDW       3'b100
+`define RVC_FCT3_J          3'b101
+`define RVC_FCT3_BEQZ       3'b110
+`define RVC_FCT3_BNEZ       3'b111
+// op = 10(jr, jalr, mv, add)
+`define RVC_FCT3_SLLI       3'b000
+`define RVC_FCT3_LWSP       3'b010
+`define RVC_FCT3_LDSP       3'b011
+`define RVC_FCT3_JR         3'b100
+`define RVC_FCT3_MV         3'b100
+`define RVC_FCT3_EBREAK     3'b100
+`define RVC_FCT3_JALR       3'b100
+`define RVC_FCT3_ADD        3'b100
+`define RVC_FCT3_SWSP       3'b110
+`define RVC_FCT3_SDSP       3'b111
+
+
+
 // macros
 // sign-extend. N >= M 
 `define SEXT(in, from, to) \
-    {{(to-from){{$signed(in)}[from-1]}}, {in}}
+    {{(to-from){{in}[from-1]}}, {in}}
 
 // zero-extend. N >= M 
 `define ZEXT(in, from, to) \

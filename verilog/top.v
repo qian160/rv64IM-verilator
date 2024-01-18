@@ -9,6 +9,7 @@ module top(input clock, input reset, output [63:0] pc_o, output reg [31:0]inst_o
         .reset(reset),
         .inst_i(MEM.inst_o),
         .branch_i(ID.branch_o),
+        .is_compressed_i(ID.is_compressed_o),
         .branch_target_i(ID.branch_target_o),
     );
 
@@ -78,5 +79,7 @@ module top(input clock, input reset, output [63:0] pc_o, output reg [31:0]inst_o
         .rd_i(WB.rd_o),
         .wdata_i(WB.rf_wdata_o),
     );
+
+    reg [63:0] pc_test = pc_o;
 
 endmodule

@@ -1,4 +1,4 @@
-//#include "trap.h"
+#include "trap.h"
 
 volatile unsigned x = 0xffffffff;
 volatile unsigned char buf[16];
@@ -9,7 +9,7 @@ int main() {
 		*((volatile unsigned*)(buf + 3)) = 0xaabbccdd;
 
 		x = *((volatile unsigned*)(buf + 3));
-//		check(x == 0xaabbccdd);
+		check(x == 0xaabbccdd);
 
 		buf[0] = buf[1] = 0;
 	}

@@ -9,8 +9,8 @@ module regfile(
     // id
     input [4:0] rs1_i,
     input [4:0] rs2_i,
-    output [63:0] rdata1_o, // read data1
-    output [63:0] rdata2_o, // read data2
+    output reg [63:0] rdata1_o, // read data1
+    output reg [63:0] rdata2_o, // read data2
     output [63:0] a0_o
 );
     reg [63:0] rf [0: 31];
@@ -23,7 +23,12 @@ module regfile(
             rf[rd_i] <= wdata_i;
     end
 
-    assign rdata1_o = rf[rs1_i];
-    assign rdata2_o = rf[rs2_i];
+    always @* begin
+        rdata1_o = rf[rs1_i];
+        rdata2_o = rf[rs2_i];
+    end
+
+//    assign rdata1_o = rf[rs1_i];
+//    assign rdata2_o = rf[rs2_i];
     assign a0_o = rf[5'd10];
 endmodule

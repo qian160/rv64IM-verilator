@@ -1,6 +1,7 @@
 /*
 TODO: cache, branch-predictor?
 */
+`include "define.v"
 module ifetch (
     input clock,
     input reset,
@@ -8,6 +9,7 @@ module ifetch (
     input  [31:0]   inst_i,
     // from id
     input  branch_i,
+    input  is_compressed_i,
     input  [63:0]   branch_target_i,
 
     output [63:0]   pc_o,
@@ -22,6 +24,8 @@ module ifetch (
             next_pc = `PMEM_START;
         else if (branch_i)
             next_pc = branch_target_i;
+        else if (is_compressed_i)
+            next_pc = pc + 64'd2;
         else
             next_pc = pc + 64'd4;
     end

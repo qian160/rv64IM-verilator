@@ -24,11 +24,11 @@ $(ALL): %: Makefile.%
 
 # compile(vtop) -> compile(image file) -> load -> run
 Makefile.%: %.c $(LINKAGE)
-	$(call print_yellow,building img $*... )
+	$(call print_yellow,====building img $*...=== )
 	@make -s -f scripts/Makefile NAME=$* build
-	$(call print_yellow,loading img $*... )
+	$(call print_yellow,====loading img $*...===)
 	@../utils/load $*.bin
-	$(call print_green,start simulating... )
+	$(call print_green,====start simulating...===)
 	@../obj_dir/Vtop 114514\
 		&& printf "[%14s] $(COLOR_GREEN)PASS!$(COLOR_NONE)\n" $* >> $(RESULT)\
 		|| printf "[%14s] $(COLOR_RED)FAIL!$(COLOR_NONE)\n" $* >> $(RESULT)
