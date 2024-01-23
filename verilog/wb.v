@@ -1,6 +1,6 @@
 module wb(
     // regfile
-    input rf_wen_i,
+    input wen_i,
     input [4:0]     rd_i,
     input [63:0]    rf_wdata_i,
     // debug
@@ -8,13 +8,13 @@ module wb(
     input   [63: 0]  pc_i,
     input   [63: 0]  a0_i,
     // to rf
-    output rf_wen_o,
+    output wen_o,
     output [4:0]    rd_o,
     output [63:0]   rf_wdata_o
 );
 
     assign rd_o     = rd_i;
-    assign rf_wen_o = rf_wen_i;
+    assign wen_o = wen_i;
     assign rf_wdata_o = rf_wdata_i;
 
     always @* begin

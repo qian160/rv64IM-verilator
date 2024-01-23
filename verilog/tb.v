@@ -1,4 +1,4 @@
-// for vivado
+// a simple tb for vivado/modelsim
 module tb();
     reg clk, rst;
     localparam CLK_PERIOD = 10;

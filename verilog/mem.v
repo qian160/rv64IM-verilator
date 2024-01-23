@@ -11,12 +11,12 @@ module mem(
     input   [2:0]   funct3_i,
     input   [63:0]  aluout_i,     // load/store address, or data to regfile
     // ex's output
-    input   rf_wen_i,
+    input   wen_i,
     input   [4:0]   rd_i,
     input   [63:0]  pc_i,
     input   exit_i,
     // to wb(regfile)
-    output  rf_wen_o,
+    output  wen_o,
     output  [4:0]   rd_o,
     output  [63:0]  rf_wdata_o,
     output  [63:0]  pc_o,
@@ -73,7 +73,7 @@ module mem(
         end
     end
 
-    assign rf_wen_o = rf_wen_i;
+    assign wen_o = wen_i;
     assign rd_o     = rd_i;
     assign rf_wdata_o = load_i? load_data: aluout_i;
 

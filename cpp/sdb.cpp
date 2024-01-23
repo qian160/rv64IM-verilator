@@ -121,21 +121,31 @@ int cmd_x(string arg) {
 }
 
 // d n addr
+// compressed instruction will be expanded to its corresponding 32-bit instruction
 int cmd_d(string arg) {
     uint64_t n, addr;
     if (sscanf(arg.c_str(), "%ld %li", &n, &addr)) {
-        if (addr & 0b11) {
-            cout << "addr should be multiple of 4" << endl;
+        if (addr & 0b1) {
+            cout << "addr should be multiple of 2" << endl;
         }
         else {
             char buf[32];
+            uint64_t pc = addr;
             for (uint64_t i = 0; i < n; i++) {
-                uint64_t pc = addr + i * 4;
                 if (!in_pmem(pc)) {
                     cout << "pc out of bounds: " << pc;
                 }
-                disassemble(buf, sizeof(buf), pc, ((uint8_t *)(state.mem_ptr))+ (pc-pmem_start) , 4);
-                cout << "0x" << pc << ": " << buf << endl;
+                uint8_t* instr_ptr = ((uint8_t *)(state.mem_ptr))+ (pc-pmem_start);
+                if ((*instr_ptr & 0b11) == 0b11){
+                    disassemble(buf, sizeof(buf), pc, instr_ptr , 4);
+                    cout << "0x" << pc << ": " << buf << endl;
+                    pc += 4;
+                }
+                else{
+                    disassemble(buf, sizeof(buf), pc, instr_ptr , 2);
+                    cout << "0x" << pc << ": " << buf << endl;
+                    pc += 2;
+                }
             }
         }
     }

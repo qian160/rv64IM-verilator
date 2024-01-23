@@ -10,7 +10,7 @@ module ex(
     input [2:0]     funct3_i,
     input [63:0]    sdata_i,
     // wb
-    input rf_wen_i,
+    input wen_i,
     input exit_i,
     input [4:0]     rd_i,
     input [63:0]    pc_i,       // debug
@@ -19,7 +19,7 @@ module ex(
     output store_o,
     output [2:0]    funct3_o,
     output [63:0]   sdata_o,
-    output rf_wen_o,
+    output wen_o,
     output [4:0]    rd_o,
     output reg [63:0]   aluout_o,
     // debug
@@ -67,7 +67,7 @@ module ex(
         endcase
     end
 
-    assign rf_wen_o = rf_wen_i;
+    assign wen_o = wen_i;
     assign rd_o     = rd_i;
 
     assign pc_o     = pc_i;

@@ -28,7 +28,7 @@ module top(input clock, input reset, output [63:0] pc_o, output reg [31:0]inst_o
         .operand2_i(ID.operand2_o),
         .rd_i(ID.rd_o),
         .aluop_i(ID.aluop_o),
-        .rf_wen_i(ID.rf_wen_o),
+        .wen_i(ID.wen_o),
         // mem
         .load_i(ID.load_o),
         .store_i(ID.store_o),
@@ -44,7 +44,7 @@ module top(input clock, input reset, output [63:0] pc_o, output reg [31:0]inst_o
         // ifetch
         .if_pc_i(IF.pc_o),
         // write back
-        .rf_wen_i(EX.rf_wen_o),
+        .wen_i(EX.wen_o),
         .rd_i(EX.rd_o),
         .aluout_i(EX.aluout_o),
         // mem
@@ -60,7 +60,7 @@ module top(input clock, input reset, output [63:0] pc_o, output reg [31:0]inst_o
     wb WB(
         // wb
         .rf_wdata_i(MEM.rf_wdata_o),
-        .rf_wen_i(MEM.rf_wen_o),
+        .wen_i(MEM.wen_o),
         .rd_i(MEM.rd_o),
         // debug
         .exit_i(MEM.exit_o),
@@ -75,7 +75,7 @@ module top(input clock, input reset, output [63:0] pc_o, output reg [31:0]inst_o
         .rs1_i(ID.rs1_o),
         .rs2_i(ID.rs2_o),
         // wb
-        .wen_i(WB.rf_wen_o),
+        .wen_i(WB.wen_o),
         .rd_i(WB.rd_o),
         .wdata_i(WB.rf_wdata_o),
     );
