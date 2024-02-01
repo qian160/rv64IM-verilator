@@ -1,19 +1,29 @@
 `include "define.v"
-
 module id(
-    // from regfile
-    input [63:0]  rs1val_i,
-    input [63:0]  rs2val_i,
+    input clock,
+    input reset,
     // from ifetch
-    input [31:0]  inst_i,
-    input [63:0]  pc_i,
+    input [31:0]    inst_i,
+    input [63:0]    pc_i,
+    // forward
+    input [4:0]     ex_rd_i,
+    input [4:0]     mem_rd_i,
+    input [4:0]     wb_rd_i,
+    input [63:0]    ex_wdata_i,
+    input [63:0]    mem_wdata_i,
+    input [63:0]    wb_wdata_i,
+    // from regfile
+    input [63:0]    rs1val_i,
+    input [63:0]    rs2val_i,
+    // read after load hazard
+    input prev_is_load_i,
     // to regfile
     output reg [4:0] rs1_o,
     output reg [4:0] rs2_o,
     // decode result. to ex
     output reg wen_o,
-    output reg [63:0] operand1_o,
-    output reg [63:0] operand2_o,
+    output reg [63:0] srcA_o,
+    output reg [63:0] srcB_o,
     output reg [4:0]  rd_o,
     output reg [4:0]  aluop_o,
     // mem
@@ -23,8 +33,10 @@ module id(
     output reg [63:0]   sdata_o,    // store data
     // to ifetch
     output reg branch_o,
-    output is_compressed_o,
     output reg [63:0]   branch_target_o,
+    // control
+    output branch_flush_o,
+    output load_use_o,
     // debug
     output [63:0]   pc_o,
     output reg exit_o
@@ -58,26 +70,38 @@ module id(
     wire [63:0] immCL_W = `ZEXT({inst_i[5], inst_i[12:10], inst_i[6], 2'b0}, 8, 64);
     wire [63:0] immCL_D = `ZEXT({inst_i[6:5], inst_i[12:10], 3'b0}, 8, 64);
 
+    wire [63:0] rs1val = (rs1_o == 5'd0)? 0 :
+                        (rs1_o == ex_rd_i) ? ex_wdata_i :
+                        (rs1_o == mem_rd_i)? mem_wdata_i :
+                        (rs1_o == wb_rd_i)? wb_wdata_i:
+                        rs1val_i;
+
+    wire [63:0] rs2val = (rs2_o == 5'd0)? 0 :
+                        (rs2_o == ex_rd_i) ? ex_wdata_i :
+                        (rs2_o == mem_rd_i)? mem_wdata_i :
+                        (rs2_o == wb_rd_i)? wb_wdata_i:
+                        rs2val_i;
+
     assign pc_o = pc_i;
-    assign is_compressed_o = inst_i[1:0] != 2'b11;
-    assign exit_o = (is_compressed_o && (inst_i[15:0] == `C_EBREAK)) ||
-        (!is_compressed_o && (inst_i == `EBREAK));
+    assign branch_flush_o = branch_o & ~load_use_o;
+    //assign branch_flush_o = branch_o;
+    assign load_use_o = prev_is_load_i & ((ex_rd_i == rs1_o) | (ex_rd_i == rs2_o));
     // decode
     always @* begin
-        // default values. need to be updated
-        operand1_o = 0;
-        operand2_o = 0;
+        // default values
+        srcA_o = 0;
+        srcB_o = 0;
         wen_o = 0;
-        aluop_o  = `ALU_ADD;
-        load_o   = 1'b0;
-        store_o  = 1'b0;
+        rd_o = 5'b0;
+        aluop_o = `ALU_ADD;
+        load_o = 1'b0;
+        store_o = 1'b0;
         branch_o = 1'b0;
-        sdata_o  = 64'b0;
+        sdata_o = 64'b0;
         branch_target_o = 64'b0;
-        rd_o    = 5'b0;
-        rs1_o   = 5'b0;
-        rs2_o   = 5'b0;
-        funct3_o= 3'b0;
+        rs1_o = 5'b0;
+        rs2_o = 5'b0;
+        funct3_o = 3'b0;
 
         case (inst_i[1:0])
             2'b00:  begin
@@ -86,47 +110,49 @@ module id(
                         wen_o = 1'b1;
                         rd_o = rs2_c;
                         rs1_o = 5'd2;
-                        operand1_o = rs1val_i;
-                        operand2_o = `ZEXT({inst_i[10:7], inst_i[12:11], inst_i[5], inst_i[6], 2'b00}, 10, 64);
+                        srcA_o = rs1val;
+                        srcB_o = `ZEXT({inst_i[10:7], inst_i[12:11], inst_i[5], inst_i[6], 2'b00}, 10, 64);
                     end
 
+                    //3'b001:;        // c.fld
                     3'b010: begin   // c.lw
                         load_o = 1'b1;
                         wen_o = 1'b1;
                         rd_o = rs2_c;
                         rs1_o = rs1_c;
                         funct3_o = funct3_c;
-                        operand1_o = rs1val_i;
-                        operand2_o = immCL_W;;
+                        srcA_o = rs1val;
+                        srcB_o = immCL_W;;
                     end
-                    3'b011: begin   // c.ld
+                    3'b011: begin   // c.flw(rv32fc), c.ld
                         load_o = 1'b1;
                         wen_o = 1'b1;
                         rd_o = rs2_c;
                         rs1_o = rs1_c;
                         funct3_o = funct3_c;
-                        operand1_o = rs1val_i;
-                        operand2_o = immCL_D;
+                        srcA_o = rs1val;
+                        srcB_o = immCL_D;
                     end
 
+                    //3'b010:;        // c.fsd
                     3'b110: begin   // c.sw
                         store_o = 1'b1;
-                        sdata_o = rs2val_i;
+                        sdata_o = rs2val;
                         rs1_o = rs1_c;
                         rs2_o = rs2_c;
                         funct3_o = inst_i[15:13];
-                        operand1_o = rs1val_i;
-                        operand2_o = immCL_W;
+                        srcA_o = rs1val;
+                        srcB_o = immCL_W;
                     end
 
-                    3'b111: begin   // c.sd
+                    3'b111: begin   // c.fsw(rv32fc), c.sd
                         store_o = 1'b1;
-                        sdata_o = rs2val_i;
+                        sdata_o = rs2val;
                         rs1_o = rs1_c;
                         rs2_o = rs2_c;
                         funct3_o = inst_i[15:13];
-                        operand1_o = rs1val_i;
-                        operand2_o = immCL_D;
+                        srcA_o = rs1val;
+                        srcB_o = immCL_D;
                     end
                     default:    error(pc_i);
                 endcase
@@ -138,24 +164,23 @@ module id(
                         wen_o = 1'b1;
                         rd_o = rd;
                         rs1_o = rd;
-                        operand1_o = rs1val_i;
-                        operand2_o = immCI;
+                        srcA_o = rs1val;
+                        srcB_o = immCI;
                     end
 
-                    3'b001: begin   // c.jal, c.addiw
-                        // c.jal is rv32 only. in rv64 funct3 == 1 will be decoded as c.addiw
+                    3'b001: begin   // c.jal(rv32), c.addiw
                         wen_o = 1'b1;
                         rd_o = rd;
                         rs1_o = rd;
-                        operand1_o = rs1val_i;
-                        operand2_o = immCI;
+                        srcA_o = rs1val;
+                        srcB_o = immCI;
                         aluop_o = `ALU_ADDW;
                     end
 
                     3'b010: begin   // c.li
                         wen_o = 1'b1;
                         rd_o = rd;
-                        operand1_o = immCI;
+                        srcA_o = immCI;
                     end
 
                     3'b011:  begin
@@ -164,13 +189,13 @@ module id(
                                 wen_o = 1'b1;
                                 rd_o = 5'd2;
                                 rs1_o = 5'd2;
-                                operand1_o = rs1val_i;
-                                operand2_o = `SEXT({inst_i[12], inst_i[4:3], inst_i[5], inst_i[2], inst_i[6], 4'b0}, 10, 64);
+                                srcA_o = rs1val;
+                                srcB_o = `SEXT({inst_i[12], inst_i[4:3], inst_i[5], inst_i[2], inst_i[6], 4'b0}, 10, 64);
                             end
                             default: begin  // c.lui
                                 wen_o = 1'b1;
                                 rd_o = rd;
-                                operand1_o = immCI << 12;
+                                srcA_o = immCI << 12;
                             end
                         endcase
                     end
@@ -181,8 +206,8 @@ module id(
                                 wen_o = 1'b1;
                                 rs1_o = rs1_c;
                                 rd_o = rs1_c;
-                                operand1_o = rs1val_i;
-                                operand2_o = immCI;
+                                srcA_o = rs1val;
+                                srcB_o = immCI;
                                 aluop_o = `ALU_SRL;
                             end
 
@@ -190,8 +215,8 @@ module id(
                                 wen_o = 1'b1;
                                 rs1_o = rs1_c;
                                 rd_o = rs1_c;
-                                operand1_o = rs1val_i;
-                                operand2_o = immCI;
+                                srcA_o = rs1val;
+                                srcB_o = immCI;
                                 aluop_o = `ALU_SRA;
                             end
 
@@ -199,8 +224,8 @@ module id(
                                 wen_o = 1'b1;
                                 rd_o = rs1_c;
                                 rs1_o = rs1_c;
-                                operand1_o = rs1val_i;
-                                operand2_o = immCI;
+                                srcA_o = rs1val;
+                                srcB_o = immCI;
                                 aluop_o = `ALU_AND;
                             end
 
@@ -209,8 +234,8 @@ module id(
                                 rd_o = rs1_c;
                                 rs1_o = rs1_c;
                                 rs2_o = rs2_c;
-                                operand1_o = rs1val_i;
-                                operand2_o = rs2val_i;
+                                srcA_o = rs1val;
+                                srcB_o = rs2val;
                                 case (inst_i[12])
                                     // rv32
                                     1'b0:   begin
@@ -253,13 +278,13 @@ module id(
 
                     3'b110: begin   // c.beqz
                         rs1_o = rs1_c;
-                        branch_o = rs1val_i == 64'b0;
+                        branch_o = rs1val == 64'b0;
                         branch_target_o = pc_i + immCB;
                     end
 
                     3'b111: begin   // c.bnez
                         rs1_o = rs1_c;
-                        branch_o = rs1val_i != 64'b0;
+                        branch_o = rs1val != 64'b0;
                         branch_target_o = pc_i + immCB;
                     end
                     default: error(pc_i);
@@ -272,29 +297,30 @@ module id(
                         wen_o = 1'b1;
                         rd_o = rd;
                         rs1_o = rd;
-                        operand1_o = rs1val_i;
-                        operand2_o = immCI;
+                        srcA_o = rs1val;
+                        srcB_o = immCI;
                         aluop_o = `ALU_SLL;
                     end
 
+                    //3'b001:;        // c.fldsp
                     3'b010: begin   // c.lwsp
                         load_o = 1'b1;
                         funct3_o = funct3_c;
                         wen_o = 1'b1;
                         rd_o = rd;
                         rs1_o = 5'd2;
-                        operand1_o = rs1val_i;
-                        operand2_o = `ZEXT({inst_i[3:2], inst_i[12], inst_i[6:4], 2'b0}, 8, 64);
+                        srcA_o = rs1val;
+                        srcB_o = `ZEXT({inst_i[3:2], inst_i[12], inst_i[6:4], 2'b0}, 8, 64);
                     end
 
-                    3'b011: begin   // c.ldsp
+                    3'b011: begin   // c.flwsp(rv32fc), c.ldsp
                         load_o = 1'b1;
                         funct3_o = funct3_c;
                         wen_o = 1'b1;
                         rd_o = rd;
                         rs1_o = 5'd2;
-                        operand1_o = rs1val_i;
-                        operand2_o = `ZEXT({inst_i[4:2], inst_i[12], inst_i[6:5], 3'b0}, 9, 64);
+                        srcA_o = rs1val;
+                        srcB_o = `ZEXT({inst_i[4:2], inst_i[12], inst_i[6:5], 3'b0}, 9, 64);
                     end
 
                     3'b100: begin
@@ -304,20 +330,20 @@ module id(
                                     5'b0:   begin       // c.jr
                                         branch_o = 1'b1;
                                         rs1_o = rd;
-                                        branch_target_o = rs1val_i;
+                                        branch_target_o = rs1val;
                                     end
                                     default:    begin   // c.mv
                                         wen_o = 1'b1;
                                         rd_o = rd;
                                         rs1_o = inst_i[6:2];
-                                        operand1_o = rs1val_i;
+                                        srcA_o = rs1val;
                                     end
                                 endcase
                             end
                             1'b1:   begin
                                 case (inst_i[11:7])
                                     5'b0:   begin               // c.ebreak
-                                        //exit_o = 1'b1;
+                                        exit_o = 1'b1;
                                     end
                                     default:    begin
                                         case (inst_i[6:2])
@@ -325,18 +351,18 @@ module id(
                                                 wen_o = 1'b1;
                                                 branch_o = 1'b1;
                                                 rd_o = 5'd1;    // x[1] = ra
-                                                branch_target_o = rs1val_i;
+                                                branch_target_o = rs1val;
                                                 rs1_o = rd;
-                                                operand1_o = pc_i;
-                                                operand2_o = 64'd2;
+                                                srcA_o = pc_i;
+                                                srcB_o = 64'd2;
                                             end
                                             default:    begin   // c.add
                                                 wen_o = 1'b1;
                                                 rs1_o = rd;
                                                 rs2_o = inst_i[6:2];
                                                 rd_o = rd;
-                                                operand1_o = rs1val_i;
-                                                operand2_o = rs2val_i;
+                                                srcA_o = rs1val;
+                                                srcB_o = rs2val;
                                             end
                                         endcase
                                     end
@@ -345,25 +371,25 @@ module id(
                         endcase
                     end
 
+                    //3'b101:;        // c.fsdsp
                     3'b110: begin   // c.swsp
                         store_o = 1'b1;
-                        sdata_o = rs2val_i;
+                        sdata_o = rs2val;
                         funct3_o = funct3_c;
                         rs1_o = 2'd2;
                         rs2_o = inst_i[6:2];
-                        operand1_o = rs1val_i;
-                        operand2_o = `ZEXT({inst_i[8:7], inst_i[12:9], 2'b0}, 8, 64);
+                        srcA_o = rs1val;
+                        srcB_o = `ZEXT({inst_i[8:7], inst_i[12:9], 2'b0}, 8, 64);
                     end
 
-                    3'b111: begin   // c.sdsp
-                    //pass?
+                    3'b111: begin   // c.fswsp(rv32fc), c.sdsp
                         store_o = 1'b1;
-                        sdata_o = rs2val_i;
+                        sdata_o = rs2val;
                         funct3_o = funct3_c;
                         rs1_o = 2'd2;
                         rs2_o = inst_i[6:2];
-                        operand1_o = rs1val_i;
-                        operand2_o = `ZEXT({inst_i[9:7], inst_i[12:10], 3'b0}, 9, 64);
+                        srcA_o = rs1val;
+                        srcB_o = `ZEXT({inst_i[9:7], inst_i[12:10], 3'b0}, 9, 64);
                     end
                     default:    error(pc_i); 
                 endcase
@@ -378,13 +404,13 @@ module id(
                 rs1_o = rs1;
                 rs2_o = rs2;
                 funct3_o = funct3;
-                rd_o = rd;
                 case (opcode)
                     `OPCODE_ARITH_I:   begin   // I-type
                         // default values
                         wen_o = 1;
-                        operand1_o = rs1val_i;
-                        operand2_o = immI;
+                        rd_o = rd;
+                        srcA_o = rs1val;
+                        srcB_o = immI;
                         case (funct3)
                             `FCT3_ADDI: aluop_o = `ALU_ADD;
                             `FCT3_SLTI: aluop_o = `ALU_SLT;
@@ -401,8 +427,9 @@ module id(
                     `OPCODE_ARITH_R:   begin
                         // rd = rs1 op rs2
                         wen_o = 1;
-                        operand1_o = rs1val_i;
-                        operand2_o = rs2val_i;
+                        rd_o = rd;
+                        srcA_o = rs1val;
+                        srcB_o = rs2val;
                         case (funct7)
                             7'h00: begin        // most instruction
                                 case (funct3)
@@ -451,8 +478,9 @@ module id(
                     `OPCODE_RV64_ARITH_I: begin
                         // rd = rs1 op rs2
                         wen_o = 1'b1;
-                        operand1_o = rs1val_i;
-                        operand2_o = immI;
+                        rd_o = rd;
+                        srcA_o = rs1val;
+                        srcB_o = immI;
                         case (funct3)
                             `FCT3_ADDIW:    aluop_o = `ALU_ADDW;
                             `FCT3_SLLIW:    aluop_o = `ALU_SLLW;
@@ -465,8 +493,9 @@ module id(
                     `OPCODE_RV64_ARITH_R: begin
                         // rd = rs1 op rs2
                         wen_o = 1'b1;
-                        operand1_o = rs1val_i;
-                        operand2_o = rs2val_i;
+                        rd_o = rd;
+                        srcA_o = rs1val;
+                        srcB_o = rs2val;
                         case (funct7)
                             7'h00:  begin
                                 case (funct3)
@@ -501,30 +530,31 @@ module id(
                         // rd = M[rs1 + imm]
                         // ALU: calculate the address
                         wen_o = 1'b1;
+                        rd_o = rd;
                         load_o = 1'b1;
-                        operand1_o = rs1val_i;
-                        operand2_o = immI;
+                        srcA_o = rs1val;
+                        srcB_o = immI;
                     end
 
                     `OPCODE_STORE:  begin
                         // M[rs1 + imm] = rs2
                         // ALU: calculate the address
                         store_o = 1'b1;
-                        operand1_o = rs1val_i;
-                        operand2_o = immS;
-                        sdata_o = rs2val_i;
+                        srcA_o = rs1val;
+                        srcB_o = immS;
+                        sdata_o = rs2val;
                     end
 
                     `OPCODE_BRANCH: begin
                         // if (rs1 op rs2) pc += imm
                         branch_target_o = pc_i + immB;
                         case (funct3)
-                            `FCT3_BEQ:  branch_o = rs1val_i == rs2val_i;
-                            `FCT3_BNE:  branch_o = rs1val_i != rs2val_i;
-                            `FCT3_BLTU: branch_o = rs1val_i <  rs2val_i;
-                            `FCT3_BGEU: branch_o = rs1val_i >= rs2val_i;
-                            `FCT3_BLT:  branch_o = $signed(rs1val_i) <  $signed(rs2val_i);
-                            `FCT3_BGE:  branch_o = $signed(rs1val_i) >= $signed(rs2val_i);
+                            `FCT3_BEQ:  branch_o = rs1val == rs2val;
+                            `FCT3_BNE:  branch_o = rs1val != rs2val;
+                            `FCT3_BLTU: branch_o = rs1val <  rs2val;
+                            `FCT3_BGEU: branch_o = rs1val >= rs2val;
+                            `FCT3_BLT:  branch_o = $signed(rs1val) <  $signed(rs2val);
+                            `FCT3_BGE:  branch_o = $signed(rs1val) >= $signed(rs2val);
                             default:    error(pc_i);
                         endcase
                     end
@@ -532,8 +562,9 @@ module id(
                     `OPCODE_JAL:   begin   // J-type
                         // rd = pc + 4; pc += immJ
                         wen_o = 1;
-                        operand1_o = pc_i;
-                        operand2_o = 64'd4;
+                        rd_o = rd;
+                        srcA_o = pc_i;
+                        srcB_o = 64'd4;
                         branch_o = 1'b1;
                         branch_target_o = pc_i + immJ;
                     end
@@ -541,31 +572,34 @@ module id(
                     `OPCODE_JALR:  begin   // I-type
                         // rd = pc + 4; pc += rs1 + immI
                         wen_o = 1;
-                        operand1_o = pc_i;
-                        operand2_o = 64'd4;
+                        rd_o = rd;
+                        srcA_o = pc_i;
+                        srcB_o = 64'd4;
                         branch_o = 1'b1;
-                        branch_target_o = rs1val_i + immI;
+                        branch_target_o = rs1val + immI;
                     end
 
                     `OPCODE_AUIPC: begin   // U-type
                         // rd = pc + imm << 12
                         wen_o = 1'b1;
-                        operand1_o = pc_i;
-                        operand2_o = immU;
+                        rd_o = rd;
+                        srcA_o = pc_i;
+                        srcB_o = immU;
                     end
 
                     `OPCODE_LUI:   begin   // U-type
                         // rd = imm << 12
                         wen_o = 1'b1;
-                        operand1_o = immU;
-                        operand2_o = 64'b0;
+                        rd_o = rd;
+                        srcA_o = immU;
+                        srcB_o = 64'b0;
                     end
 
-                    `OPCODE_SYS:;//    exit_o = inst_i == `EBREAK;
+                    `OPCODE_SYS:    exit_o = inst_i == `EBREAK;
 
                     default:    error(pc_i);
                 endcase // opcode
-            end     // inst[1:0] == 2'b11
+            end     // inst_i[1:0] == 2'b11
         endcase
     end
 

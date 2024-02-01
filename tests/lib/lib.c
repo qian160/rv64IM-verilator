@@ -88,3 +88,17 @@ int memcmp(const void *s1, const void *s2, size_t n) {
     }
     return 0;
 }
+//can not overlap. UB
+void *memcpy(void *dst, const void *src, size_t n) {
+  char *pszDest = (char *)dst;
+    const char *pszSource =( const char*)src;
+    if((pszDest!= NULL) && (pszSource!= NULL))
+    {
+        while(n--) //till cnt
+        {
+            //Copy byte by byte
+            *(pszDest++)= *(pszSource++);
+        }
+    }
+    return dst;
+}

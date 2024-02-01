@@ -1,6 +1,9 @@
-// see https://msyksphinz-self.github.io/riscv-isadoc/html/ for details
-// special instructions
+// see https://msyksphinz-self.github.io/riscv-isadoc/html/ and 
+// https://riscv.org/wp-content/uploads/2017/05/riscv-spec-v2.2.pdf
+// for details
+
 `define EBREAK      32'h100073
+`define NOP         32'h13
 `define C_EBREAK    16'h9002
 
 // init values
@@ -17,7 +20,7 @@
 `define OPCODE_LUI       7'b0110111
 `define OPCODE_AUIPC     7'b0010111
 `define OPCODE_SYS       7'b1110011
-// rv64 extension
+// rv64
 `define OPCODE_RV64_ARITH_R  7'b0111011
 `define OPCODE_RV64_ARITH_I  7'b0011011
 
@@ -133,7 +136,6 @@
 `define FCT3_BGE        3'd5
 `define FCT3_BLTU       3'd6
 `define FCT3_BGEU       3'd7
-
 
 /*  rvc */
 // ???

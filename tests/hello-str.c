@@ -1,7 +1,6 @@
 #include "trap.h"
 
 char buf[128];
-
 int main() {
 
 	char *buf = "Hello world!\n";

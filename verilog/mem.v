@@ -2,25 +2,29 @@
 import "DPI-C" function void set_mem_ptr(input logic [63:0] a[]);
 module mem(
     input   clock,
-    // ifetch
+    input   reset,
+    // ifetch, combinational logic. no pipeline register
     input   [63:0]  if_pc_i,
-    // main memory
+    // mem
     input   store_i,
     input   load_i,
     input   [63:0]  sdata_i,
     input   [2:0]   funct3_i,
     input   [63:0]  aluout_i,     // load/store address, or data to regfile
-    // ex's output
+    // wb
     input   wen_i,
     input   [4:0]   rd_i,
-    input   [63:0]  pc_i,
     input   exit_i,
-    // to wb(regfile)
+    // debug
+    input   [63:0]  pc_i,
+    // wb
     output  wen_o,
     output  [4:0]   rd_o,
-    output  [63:0]  rf_wdata_o,
+    output  [63:0]  wdata_o,
     output  [63:0]  pc_o,
+    // debug
     output  exit_o,
+    // ifetch
     output reg [31:0]   inst_o
 );
     /*  ifetch  */
@@ -74,8 +78,8 @@ module mem(
     end
 
     assign wen_o = wen_i;
-    assign rd_o     = rd_i;
-    assign rf_wdata_o = load_i? load_data: aluout_i;
+    assign rd_o = rd_i;
+    assign wdata_o = load_i? load_data: aluout_i;
 
     assign pc_o = pc_i;
     assign exit_o = exit_i;

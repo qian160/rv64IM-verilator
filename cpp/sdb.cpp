@@ -50,6 +50,9 @@ int cmd_s(string steps)  {
     while(n-- && !Verilated::gotFinish()){
         tb.tick();
         statistics.nr_inst++;
+        if (statistics.nr_inst > 114514)
+            // there must exist some bugs
+            my_exit(114514);
     }
     return 0;
 }
@@ -102,18 +105,42 @@ int cmd_x(string arg) {
         cout << "bad address\n";
         return 0;
     }
+    cout << "0x" << addr << ": ";
+    int cnt = 0;
 
     switch (f) {
         case 'h':
-            for (uint64_t i = 0; i < n; i++)
+            for (uint64_t i = 0; i < n; i++) {
                 printf("%02x%c", state.mem_ptr[addr+i-pmem_start], ((i+1)%4) == 0? '\n': ' ');
+                cnt ++;
+                if(cnt == 4 && i != n-1) {
+                    cnt = 0;
+                    cout << "0x" << addr+i+1 << ": ";
+                }
+            }
             break;
         case 'd':
-            for (uint64_t i = 0; i < n; i++)
+            for (uint64_t i = 0; i < n; i++) {
                 printf("%02d%c", state.mem_ptr[addr+i-pmem_start], ((i+1)%4) == 0? '\n': ' ');
+                cnt ++;
+                if(cnt == 4 && i != n-1) {
+                    cnt = 0;
+                    cout << "0x" << addr+i+1 << ": ";
+                }
+            }
+            break;
+        case 'c':
+            for (uint64_t i = 0; i < n; i++) {
+                printf("%c%c", state.mem_ptr[addr+i-pmem_start], ((i+1)%4) == 0? '\n': ' ');
+                cnt ++;
+                if(cnt == 4 && i != n-1) {
+                    cnt = 0;
+                    cout << "0x" << addr+i+1 << ": ";
+                }
+            }
             break;
         default:
-            printf("expect format: {d/h}\n");
+            printf("expect format: {d/h/c}\n");
             break;
     }
     cout << endl;

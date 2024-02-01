@@ -2,16 +2,16 @@
 
 VSRC	= $(addprefix ./verilog/, $(shell ls ./verilog | grep \.\*v))   #.v or .sv
 CPPSRC	= $(addprefix ./cpp/, $(shell ls ./cpp | grep cpp))
-INC 	= $(addprefix ./cpp/include/, $(shell ls ./cpp/include))
 # -I is for verilog, -CFLAGS -I for cpp
 #Wno-unoptflat
 VFLAGS	= --cc --exe --trace -Wno-lint -Wno-unoptflat --build --top top\
 	-LDFLAGS -ldl \
 	-O3 -Iverilog -j 8\
 	-CFLAGS -I$(shell llvm-config-11 --includedir) \
+	-CFLAGS -Icpp/include \
 	-LDFLAGS $(shell llvm-config-11 --libs)
 
-build: $(CPPSRC) $(VSRC) $(INC)
+build: $(CPPSRC) $(VSRC)
 	@verilator $(VSRC) $(CPPSRC) $(VFLAGS) $(CPPFLAGS)
 	@echo "completed"
 

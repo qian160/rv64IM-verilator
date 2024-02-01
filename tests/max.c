@@ -25,23 +25,3 @@ int main() {
 
 	return 0;
 }
-/*
-	line 46???????. meaningless op. maybe compiler bug
-	line 53, 54: a0 should be equal to a5
-	s7: <ans> before inner loop
-	s8: <test_data>, fixed
-	47 - 56 J-loop, 43 - 62 I-loop
-	s1 -> ans_idx used in inner loop. LINE 44, and line 61, every outer loop advance the idx by 4 * 8 = 32
-	s0 -> j, line 45 reset before every inner loop
-	s6 -> i. line 43 and 60
-
-	a0 -> ans[idx]
-	s2 -> t[i]
-	s4 = s2
-
-	a0 -> ans[idx]
-	s2 -> t[i], LINE 43, changed in outer loop and maintain the same in inner loop
-
-	the 2nd and 3rd check will always be true, they do not control the flow, instead i and j do that. That's also why a li a0, 1 is performed before the check
-  
-  */

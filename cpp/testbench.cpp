@@ -63,7 +63,6 @@ int main(int argc, char **argv)
 	IFDEF(TEST_ALL, cmd_c("-1"));
 
 	tb.trace("./wave.vcd");
-	cout << "welcome" << endl;
 
 	while(!Verilated::gotFinish()){
 		cout << "(0x" << top -> pc_o << ")";

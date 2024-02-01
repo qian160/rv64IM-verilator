@@ -1,21 +1,24 @@
+`include "define.v"
 module wb(
+    input   clock,
+    input   reset,
     // regfile
-    input wen_i,
-    input [4:0]     rd_i,
-    input [63:0]    rf_wdata_i,
+    input   wen_i,
+    input   [4:0]     rd_i,
+    input   [63:0]    wdata_i,
     // debug
     input   exit_i,
     input   [63: 0]  pc_i,
+    // forward?
     input   [63: 0]  a0_i,
     // to rf
-    output wen_o,
-    output [4:0]    rd_o,
-    output [63:0]   rf_wdata_o
+    output  wen_o,
+    output  [4:0]    rd_o,
+    output  [63:0]   wdata_o
 );
-
-    assign rd_o     = rd_i;
+    assign rd_o = rd_i;
     assign wen_o = wen_i;
-    assign rf_wdata_o = rf_wdata_i;
+    assign wdata_o = wdata_i;
 
     always @* begin
         if(exit_i)   begin

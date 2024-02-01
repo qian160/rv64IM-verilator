@@ -5,26 +5,30 @@ TODO: cache, branch-predictor?
 module ifetch (
     input clock,
     input reset,
+    // control
+    input stall_i,
+    input flush_i,      // donecare
     // from memory
     input  [31:0]   inst_i,
     // from id
     input  branch_i,
-    input  is_compressed_i,
     input  [63:0]   branch_target_i,
-
     output [63:0]   pc_o,
     output [31:0]   inst_o
 );
     reg [63:0] pc;
     reg [63:0] next_pc;
 
+    wire is_compressed = inst_i[1:0] != 2'b11;
     always @*   begin
         // combinational logic for next_pc
         if (reset)
             next_pc = `PMEM_START;
+        else if (stall_i)
+            next_pc = pc;
         else if (branch_i)
             next_pc = branch_target_i;
-        else if (is_compressed_i)
+        else if (is_compressed)
             next_pc = pc + 64'd2;
         else
             next_pc = pc + 64'd4;
