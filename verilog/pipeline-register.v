@@ -12,7 +12,6 @@ module if_id (
     output reg [31:0]   inst_o,
     output reg [63:0]   pc_o
 );
-///*
     always @(posedge clock) begin
         if (reset)  begin
             inst_o <= `NOP;
@@ -26,11 +25,7 @@ module if_id (
             pc_o <= pc_i;
         end
     end
-//*/
-/*
-    assign inst_o = inst_i;
-    assign pc_o = pc_i;
-*/
+
 endmodule
 
 module id_ex (
@@ -67,7 +62,6 @@ module id_ex (
     output reg [4:0]     rd_o,
     output reg [63:0]    pc_o
 );
-///*
     always @(posedge clock) begin
         if (reset | flush_i)    begin
             srcA_o <= 0;
@@ -97,20 +91,6 @@ module id_ex (
             exit_o <= exit_i;
         end
     end
-//*/
-/*
-    assign srcA_o = srcA_i;
-    assign srcB_o = srcB_i;
-    assign pc_o = pc_i;
-    assign sdata_o = sdata_i;
-    assign funct3_o = funct3_i;
-    assign aluop_o = aluop_i;
-    assign rd_o = rd_i;
-    assign load_o = load_i;
-    assign store_o = store_i;
-    assign wen_o = wen_i;
-    assign exit_o = exit_i;
-*/
 endmodule
 
 module ex_mem (
@@ -141,7 +121,6 @@ module ex_mem (
     // debug
     output reg  [63:0]  pc_o
 );
-///*
     always @(posedge clock) begin
         if (reset)  begin
             sdata_o <= 0;
@@ -167,18 +146,6 @@ module ex_mem (
             exit_o <= exit_i;
         end
     end
-//*/
-/*
-    assign sdata_o = sdata_i;
-    assign aluout_o = aluout_i;
-    assign pc_o = pc_i;
-    assign rd_o = rd_i;
-    assign funct3_o = funct3_i;
-    assign load_o = load_i;
-    assign store_o = store_i;
-    assign wen_o = wen_i;
-    assign exit_o = exit_i; 
-*/
 endmodule
 
 module mem_wb (
@@ -202,7 +169,6 @@ module mem_wb (
     output reg  [63: 0]  pc_o,
     output reg  [63: 0]  a0_o
 );
-///*
     always @(posedge clock ) begin
         if (reset)  begin
             wdata_o <= 0;
@@ -222,13 +188,4 @@ module mem_wb (
             exit_o <= exit_i;
         end
     end
-//*/
-/*
-    assign wdata_o = wdata_i;
-    assign pc_o = pc_i;
-    assign a0_o = a0_i;
-    assign rd_o = rd_i;
-    assign wen_o = wen_i;
-    assign exit_o = exit_i;
-*/
 endmodule

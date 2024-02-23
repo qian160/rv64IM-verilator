@@ -32,7 +32,23 @@ module ex(
     output exit_o
 );
     /* verilator lint_off SELRANGE */
-    // what's the difference between signed & unsigned operation? ...
+    wire mul_is_signed = (aluop_i == `ALU_MUL) | (aluop_i == `ALU_MULH);
+    wire [127:0] mul_res;
+    wire [63:0] mul_srcA = (aluop_i == `ALU_MULW)? {32'b0, srcA_i[31:0]}: srcA_i;
+    wire [63:0] mul_srcB = (aluop_i == `ALU_MULW)? {32'b0, srcB_i[31:0]}: srcB_i;
+
+//    assign stall_req_o = (aluop_i == `ALU_DIV) | (aluop_i == `ALU_DIVU) |
+//                        (aluop_i == `ALU_DIVUW) | (aluop_i == `ALU_DIVW) |
+//                        (aluop_i == `ALU_REM) | (aluop_i == `ALU_REMU) |
+//                        (aluop_i == `ALU_REMUW) | (aluop_i == `ALU_REMW);
+
+    mult64 m(
+        .a(mul_srcA),
+        .b(mul_srcB),
+        .is_signed(mul_is_signed),
+        .result(mul_res)
+    );
+
     always @*   begin
         case (aluop_i)
             // rv32i
@@ -47,10 +63,13 @@ module ex(
             `ALU_SLT:   aluout_o = ($signed(srcA_i) < $signed(srcB_i))? 64'b1: 64'b0;
             `ALU_SLTU:  aluout_o = (srcA_i < srcB_i)? 64'b1: 64'b0;
             // rv32m
-            `ALU_MUL:   aluout_o = {srcA_i * srcB_i}[63:0];
-            `ALU_MULH:  aluout_o = {srcA_i * srcB_i}[127:64];
-            `ALU_MULHU: aluout_o = {srcA_i * srcB_i}[127:64];
-            `ALU_MULHSU:aluout_o = {$signed(srcA_i) * srcB_i}[127:64];
+//            `ALU_MUL:   aluout_o = {$signed(srcA_i) * $signed(srcB_i)}[63:0];
+//            `ALU_MULH:  aluout_o = {$signed(srcA_i) * $signed(srcB_i)}[127:64];
+//            `ALU_MULHU: aluout_o = {srcA_i * srcB_i}[127:64];
+            `ALU_MUL:   aluout_o = mul_res[63:0];
+            `ALU_MULH:  aluout_o = mul_res[127:64];
+            `ALU_MULHU: aluout_o = mul_res[127:64];
+            `ALU_MULHSU:aluout_o = {$signed(srcA_i) * srcB_i}[127:64];  // ???
             `ALU_DIV:   aluout_o = srcA_i / srcB_i;
             `ALU_DIVU:  aluout_o = srcA_i / srcB_i;
             `ALU_REM:   aluout_o = srcA_i % srcB_i;
@@ -62,9 +81,10 @@ module ex(
             `ALU_SRLW:  aluout_o = `SEXT({srcA_i[31:0] >> srcB_i[4:0]}, 32, 64);
             `ALU_SRAW:  aluout_o = `SEXT({$signed(srcA_i[31:0]) >>> srcB_i[4:0]}, 32, 64);
             // rv64m
-            `ALU_MULW:  aluout_o = `SEXT({srcA_i * srcB_i}[31:0], 32, 64);
-            `ALU_DIVW:  aluout_o = `SEXT({srcA_i / srcB_i}[31:0], 32, 64);
-            `ALU_REMW:  aluout_o = `SEXT({srcA_i % srcB_i}[31:0], 32, 64);
+//            `ALU_MULW:  aluout_o = `SEXT({$signed(srcA_i) * $signed(srcB_i)}[31:0], 32, 64);
+            `ALU_MULW:  aluout_o = `SEXT(mul_res[31:0], 32, 64);
+            `ALU_DIVW:  aluout_o = `SEXT({$signed(srcA_i) / $signed(srcB_i)}[31:0], 32, 64);
+            `ALU_REMW:  aluout_o = `SEXT({$signed(srcA_i) % $signed(srcB_i)}[31:0], 32, 64);
             `ALU_DIVUW: aluout_o = `SEXT({srcA_i / srcB_i}[31:0], 32, 64);
             `ALU_REMUW: aluout_o = `SEXT({srcA_i % srcB_i}[31:0], 32, 64);
             default:    aluout_o = srcA_i + srcB_i;

@@ -6,18 +6,31 @@ OBJCOPY = riscv64-linux-gnu-objcopy
 OBJDUMP = riscv64-linux-gnu-objdump
 AS = riscv64-linux-gnu-as
 
+ASMSRC = $(addprefix scripts/, $(shell ls scripts | grep \.S))
+CSRC = $(addprefix scripts/, $(shell ls scripts | grep \.c))
+ASMOBJS = $(ASMSRC:.S=.o)
+COBJS = $(CSRC:.c=.o)
+
+OBJS += $(ASMOBJS)
+OBJS += $(COBJS)
+
+$(ASMOBJS): %.o: %.S
+$(COBJS): %.o: %.c
+
 COMMON_FLAGS  := -fno-pic -I./include -march=rv64imc -mabi=lp64
 CFLAGS        += $(COMMON_FLAGS) -static -lc -mcmodel=medany -mstrict-align -fno-asynchronous-unwind-tables -fno-builtin -fno-stack-protector
 ASFLAGS       += $(COMMON_FLAGS)
 LDFLAGS   	  += -T scripts/linker.ld --defsym=_pmem_start=0x80000000 --defsym=_entry_offset=0x0
 LDFLAGS   	  += --gc-sections -e _start
 LDFLAGS       += -melf64lriscv
-LINKAGE		  += scripts/start.o scripts/trm_init.o lib/lib.o
+LINKAGE		  += $(OBJS) lib/lib.o
 
-scripts/start.o: scripts/start.S
+### Rule (compile): a single `.S` -> `.o` (as)
+%.o: %.S
 	@$(AS) $(ASFLAGS) -c -o $@ $<
 
-scripts/trm_init.o: scripts/trm_init.c
+### Rule (compile): a single `.c` -> `.o` (gcc)
+%.o: %.c
 	@$(CC) -c $(CFLAGS) -c -o $@ $<
 
 lib/lib.o: lib/lib.c
@@ -30,3 +43,6 @@ build: $(LINKAGE)
 	$(OBJCOPY) -S --set-section-flags .bss=alloc,contents -O binary $(NAME).elf $(NAME).bin
 run:
 
+echo:
+	@echo $(ASMSRC)
+	@echo $(OBJS)

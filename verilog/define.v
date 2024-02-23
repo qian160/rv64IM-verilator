@@ -74,7 +74,6 @@
 `define FCT3_SLTIU      3'd3
 `define FCT3_XORI       3'd4
 `define FCT3_SRLI_SRAI  3'd5
-//`define FCT3_SRAI       3'd5
 `define FCT3_ORI        3'd6
 `define FCT3_ANDI       3'd7
 // arith-r
@@ -119,17 +118,18 @@
 // load
 `define FCT3_LB         3'd0
 `define FCT3_LH         3'd1
-`define FCT3_LW         3'b2
-`define FCT3_LD         3'b3    // rv64i
+`define FCT3_LW         3'd2
+`define FCT3_LD         3'd3    // rv64i
 `define FCT3_LBU        3'd4
 `define FCT3_LHU        3'd5
 `define FCT3_LWU        3'd6    // rv64i
 // store
-`define FCT3_SB         3'b0
-`define FCT3_SH         3'b1
-`define FCT3_SW         3'b2
-`define FCT3_SD         3'b3    // rv64i
+`define FCT3_SB         3'd0
+`define FCT3_SH         3'd1
+`define FCT3_SW         3'd2
+`define FCT3_SD         3'd3    // rv64i
 // branch
+`define FCT3_JALR       3'd0
 `define FCT3_BEQ        3'd0
 `define FCT3_BNE        3'd1
 `define FCT3_BLT        3'd4
