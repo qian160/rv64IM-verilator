@@ -12,7 +12,7 @@ typedef struct{
 }CPU_state;
 
 typedef struct {
-    uint64_t nr_inst;
+    uint64_t nr_cycles;
     uint64_t nr_stall;
     uint64_t nr_flush;
 }Statistics;

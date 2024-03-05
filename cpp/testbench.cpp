@@ -44,9 +44,9 @@ void my_exit(int sig)
 {
 	double seconds = tb.time();
 	char buf[128];
-	sprintf(buf, "finished in %lf ms, #insts = %ld", seconds * 1000, statistics.nr_inst);
+	sprintf(buf, "finished in %lf ms, #cycles = %ld", seconds * 1000, statistics.nr_cycles);
 	cout << buf << endl;
-	cout << "simulation frequency = " << statistics.nr_inst / seconds << " inst/s" << endl;
+	cout << "simulation frequency = " << statistics.nr_cycles / seconds << " hz" << endl;
 	//dump_gpr();
 	exit(state.cpu_gpr[10]);	// x10 = a0
 }
@@ -62,7 +62,7 @@ int main(int argc, char **argv)
 		#define TEST_ALL 1
 	IFDEF(TEST_ALL, cmd_c("-1"));
 
-//	tb.trace("./wave.vcd");
+	tb.trace("./wave.vcd");
 
 	while(!Verilated::gotFinish()){
 		cout << "(0x" << top -> pc_o << ")";

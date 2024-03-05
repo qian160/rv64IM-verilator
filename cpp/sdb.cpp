@@ -49,9 +49,9 @@ int cmd_s(string steps)  {
     n = n? n: 1;
     while(n-- && !Verilated::gotFinish()){
         tb.tick();
-        statistics.nr_inst++;
-        if (statistics.nr_inst > 114514)
-            // there must exist some bugs
+        statistics.nr_cycles++;
+        if (statistics.nr_cycles > 114514)
+            // probably some bugs occurred
             my_exit(114514);
     }
     return 0;

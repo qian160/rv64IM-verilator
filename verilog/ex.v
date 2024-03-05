@@ -25,28 +25,48 @@ module ex(
     output [4:0]    rd_o,
     output reg [63:0]   aluout_o,
     // control
-    output stall_req_o,
-    output flush_req_o,
+    output div_not_ready_o,
     // debug
     output [63:0]       pc_o,
     output exit_o
 );
     /* verilator lint_off SELRANGE */
+    // mult
     wire mul_is_signed = (aluop_i == `ALU_MUL) | (aluop_i == `ALU_MULH);
     wire [127:0] mul_res;
     wire [63:0] mul_srcA = (aluop_i == `ALU_MULW)? {32'b0, srcA_i[31:0]}: srcA_i;
     wire [63:0] mul_srcB = (aluop_i == `ALU_MULW)? {32'b0, srcB_i[31:0]}: srcB_i;
-
-//    assign stall_req_o = (aluop_i == `ALU_DIV) | (aluop_i == `ALU_DIVU) |
-//                        (aluop_i == `ALU_DIVUW) | (aluop_i == `ALU_DIVW) |
-//                        (aluop_i == `ALU_REM) | (aluop_i == `ALU_REMU) |
-//                        (aluop_i == `ALU_REMUW) | (aluop_i == `ALU_REMW);
-
     mult64 m(
         .a(mul_srcA),
         .b(mul_srcB),
         .is_signed(mul_is_signed),
         .result(mul_res)
+    );
+
+    // div
+    wire signed_div =   (aluop_i == `ALU_DIV) | (aluop_i == `ALU_DIVW) |
+                        (aluop_i == `ALU_REM) | (aluop_i == `ALU_REMW);
+    wire unsigned_div = (aluop_i == `ALU_DIVU) | (aluop_i == `ALU_DIVUW) |
+                        (aluop_i == `ALU_REMU) | (aluop_i == `ALU_REMUW);
+    wire rv64 = (aluop_i == `ALU_DIVUW) | (aluop_i == `ALU_DIVW) | 
+                (aluop_i == `ALU_REMW) | (aluop_i == `ALU_REMUW);
+    wire [63:0] div_srcA = rv64? {32'h0, srcA_i[31:0]} : srcA_i;
+    wire [63:0] div_srcB = rv64? {32'h0, srcB_i[31:0]} : srcB_i;
+    wire divOn = signed_div | unsigned_div;
+    wire start = divOn & ~ready;
+    wire [63:0] q, r;
+    wire ready, error;
+    assign div_not_ready_o = divOn & ~ready;
+    SRT4_div div(
+        .clock(clock),
+        .start(start),
+        .is_signed(signed_div),
+        .a(div_srcA),
+        .b(div_srcB),
+        .ready(ready),
+        .error(error),
+        .q(q),
+        .r(r)
     );
 
     always @*   begin
@@ -70,10 +90,12 @@ module ex(
             `ALU_MULH:  aluout_o = mul_res[127:64];
             `ALU_MULHU: aluout_o = mul_res[127:64];
             `ALU_MULHSU:aluout_o = {$signed(srcA_i) * srcB_i}[127:64];  // ???
-            `ALU_DIV:   aluout_o = srcA_i / srcB_i;
-            `ALU_DIVU:  aluout_o = srcA_i / srcB_i;
-            `ALU_REM:   aluout_o = srcA_i % srcB_i;
-            `ALU_REMU:  aluout_o = srcA_i % srcB_i;
+//            `ALU_DIV:   aluout_o = srcA_i / srcB_i;
+//            `ALU_DIVU:  aluout_o = srcA_i / srcB_i;
+//            `ALU_REM:   aluout_o = srcA_i % srcB_i;
+//            `ALU_REMU:  aluout_o = srcA_i % srcB_i;
+            `ALU_DIV, `ALU_DIVU:   aluout_o = q;
+            `ALU_REM, `ALU_REMU:   aluout_o = r;
             // rv64i
             `ALU_ADDW:  aluout_o = `SEXT({srcA_i[31:0] +  srcB_i[31:0]}, 32, 64);
             `ALU_SUBW:  aluout_o = `SEXT({srcA_i[31:0] -  srcB_i[31:0]}, 32, 64);
@@ -83,10 +105,12 @@ module ex(
             // rv64m
 //            `ALU_MULW:  aluout_o = `SEXT({$signed(srcA_i) * $signed(srcB_i)}[31:0], 32, 64);
             `ALU_MULW:  aluout_o = `SEXT(mul_res[31:0], 32, 64);
-            `ALU_DIVW:  aluout_o = `SEXT({$signed(srcA_i) / $signed(srcB_i)}[31:0], 32, 64);
-            `ALU_REMW:  aluout_o = `SEXT({$signed(srcA_i) % $signed(srcB_i)}[31:0], 32, 64);
-            `ALU_DIVUW: aluout_o = `SEXT({srcA_i / srcB_i}[31:0], 32, 64);
-            `ALU_REMUW: aluout_o = `SEXT({srcA_i % srcB_i}[31:0], 32, 64);
+//            `ALU_DIVW:  aluout_o = `SEXT({$signed(srcA_i) / $signed(srcB_i)}[31:0], 32, 64);
+//            `ALU_REMW:  aluout_o = `SEXT({$signed(srcA_i) % $signed(srcB_i)}[31:0], 32, 64);
+//            `ALU_DIVUW: aluout_o = `SEXT({srcA_i / srcB_i}[31:0], 32, 64);
+//            `ALU_REMUW: aluout_o = `SEXT({srcA_i % srcB_i}[31:0], 32, 64);
+            `ALU_DIVW, `ALU_DIVUW:  aluout_o = `SEXT(q[31:0], 32, 64);
+            `ALU_REMW, `ALU_REMUW:  aluout_o = `SEXT(r[31:0], 32, 64);
             default:    aluout_o = srcA_i + srcB_i;
         endcase
     end

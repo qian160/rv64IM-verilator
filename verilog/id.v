@@ -45,7 +45,7 @@ module id(
 );
     task error(input [63:0] pc);
         $display("unsupported instruction at pc = %x", pc);
-//        $finish();
+        $finish();
     endtask
 
     wire [31:0] inst;
@@ -217,7 +217,7 @@ module id(
                     default:    error(pc_i);
                 endcase
             end // rv64i arith-r
-
+// 41 + 6 + 4 + 11
             `OPCODE_LOAD:   begin
                 // rd = M[rs1 + imm]
                 // ALU: calculate the address

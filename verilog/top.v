@@ -90,6 +90,8 @@ module top(input clock, input reset, output [63:0] pc_o, output reg [31:0]inst_o
     ex_mem EX_MEM(
         .clock(clock),
         .reset(reset),
+        .stall_i(CONT.stall_o[3]),
+        .flush_i(CONT.flush_o[3]),
         // mem
         .load_i(EX.load_o),
         .store_i(EX.store_o),
@@ -163,8 +165,10 @@ module top(input clock, input reset, output [63:0] pc_o, output reg [31:0]inst_o
 
     control CONT(
         .id_branch_flush_i(ID.branch_flush_o),
-        .ex_div_i(EX.stall_req_o),
+        .ex_div_i(EX.div_not_ready_o),
         .id_load_use_i(ID.load_use_o),
     );
+
+//    srt_tb st(.clock(clock));
 
 endmodule

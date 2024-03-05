@@ -96,12 +96,14 @@ endmodule
 module ex_mem (
     input   clock,
     input   reset,
+    input   stall_i,                // not being used in fact
+    input   flush_i,
     // mem
     input   store_i,
     input   load_i,
     input   [63:0]  sdata_i,
     input   [2:0]   funct3_i,
-    input   [63:0]  aluout_i,     // load/store address, or data to regfile
+    input   [63:0]  aluout_i,       // load/store address, or data to regfile
     // wb
     input   wen_i,
     input   [4:0]   rd_i,
@@ -122,7 +124,7 @@ module ex_mem (
     output reg  [63:0]  pc_o
 );
     always @(posedge clock) begin
-        if (reset)  begin
+        if (reset | flush_i)  begin
             sdata_o <= 0;
             aluout_o <= 0;
             pc_o <= `PMEM_START;
