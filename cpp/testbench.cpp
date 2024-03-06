@@ -44,7 +44,10 @@ void my_exit(int sig)
 {
 	double seconds = tb.time();
 	char buf[128];
-	sprintf(buf, "finished in %lf ms, #cycles = %ld", seconds * 1000, statistics.nr_cycles);
+	uint64_t nr_cycles = statistics.nr_cycles;
+	uint64_t nr_insts = top->nr_insts_o;
+	double ipc = (double)nr_insts / (double)nr_cycles;
+	sprintf(buf, "finished in %lf ms\n#cycles = %ld, #insts = %ld, ipc = %lf", seconds * 1000, nr_cycles, nr_insts, ipc);
 	cout << buf << endl;
 	cout << "simulation frequency = " << statistics.nr_cycles / seconds << " hz" << endl;
 	//dump_gpr();

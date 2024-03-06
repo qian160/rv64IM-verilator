@@ -34,11 +34,9 @@ module ex(
     // mult
     wire mul_is_signed = (aluop_i == `ALU_MUL) | (aluop_i == `ALU_MULH);
     wire [127:0] mul_res;
-    wire [63:0] mul_srcA = (aluop_i == `ALU_MULW)? {32'b0, srcA_i[31:0]}: srcA_i;
-    wire [63:0] mul_srcB = (aluop_i == `ALU_MULW)? {32'b0, srcB_i[31:0]}: srcB_i;
     mult64 m(
-        .a(mul_srcA),
-        .b(mul_srcB),
+        .a(srcA_i),
+        .b(srcB_i),
         .is_signed(mul_is_signed),
         .result(mul_res)
     );
@@ -48,10 +46,6 @@ module ex(
                         (aluop_i == `ALU_REM) | (aluop_i == `ALU_REMW);
     wire unsigned_div = (aluop_i == `ALU_DIVU) | (aluop_i == `ALU_DIVUW) |
                         (aluop_i == `ALU_REMU) | (aluop_i == `ALU_REMUW);
-    wire rv64 = (aluop_i == `ALU_DIVUW) | (aluop_i == `ALU_DIVW) | 
-                (aluop_i == `ALU_REMW) | (aluop_i == `ALU_REMUW);
-    wire [63:0] div_srcA = rv64? {32'h0, srcA_i[31:0]} : srcA_i;
-    wire [63:0] div_srcB = rv64? {32'h0, srcB_i[31:0]} : srcB_i;
     wire divOn = signed_div | unsigned_div;
     wire start = divOn & ~ready;
     wire [63:0] q, r;
@@ -61,8 +55,8 @@ module ex(
         .clock(clock),
         .start(start),
         .is_signed(signed_div),
-        .a(div_srcA),
-        .b(div_srcB),
+        .a(srcA_i),
+        .b(srcB_i),
         .ready(ready),
         .error(error),
         .q(q),

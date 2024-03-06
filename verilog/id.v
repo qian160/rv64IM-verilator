@@ -171,7 +171,7 @@ module id(
                 // rd = rs1 op rs2
                 wen_o = 1'b1;
                 rd_o = rd;
-                srcA_o = rs1val;
+                srcA_o = {32'b0, rs1val[31:0]};
                 srcB_o = immI;
                 case (funct3)
                     `FCT3_ADDIW:    aluop_o = `ALU_ADDW;
@@ -186,8 +186,8 @@ module id(
                 // rd = rs1 op rs2
                 wen_o = 1'b1;
                 rd_o = rd;
-                srcA_o = rs1val;
-                srcB_o = rs2val;
+                srcA_o = {32'b0, rs1val};
+                srcB_o = {32'b0, rs2val};
                 case (funct7)
                     7'h00:  begin
                         case (funct3)
@@ -217,7 +217,6 @@ module id(
                     default:    error(pc_i);
                 endcase
             end // rv64i arith-r
-// 41 + 6 + 4 + 11
             `OPCODE_LOAD:   begin
                 // rd = M[rs1 + imm]
                 // ALU: calculate the address

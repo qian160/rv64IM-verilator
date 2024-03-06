@@ -1,8 +1,15 @@
 `include "define.v"
-module top(input clock, input reset, output [63:0] pc_o, output reg [31:0]inst_o);
+module top(
+    input           clock,
+    input           reset,
+    output [63:0]   pc_o,
+    output [31:0]   inst_o,
+    output [63:0]   nr_insts_o
+);
 
     assign inst_o = MEM.inst_o;
     assign pc_o = IF.pc_o;
+    assign nr_insts_o = CONT.nr_insts_o;
 
     ifetch IF(
         .clock(clock),
@@ -164,6 +171,7 @@ module top(input clock, input reset, output [63:0] pc_o, output reg [31:0]inst_o
     );
 
     control CONT(
+        .clock(clock),
         .id_branch_flush_i(ID.branch_flush_o),
         .ex_div_i(EX.div_not_ready_o),
         .id_load_use_i(ID.load_use_o),
