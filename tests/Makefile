@@ -46,9 +46,9 @@ rvcc.%: %.c $(LINKAGE)
 #usage 1. make gcc.xxx 2. make rvcc.xxx 3. make test_all
 test_all: all
 	@cat $(RESULT)
-#	@rm $(RESULT)
+	@rm $(RESULT)
 
 clean:
-	rm -rf *.bin *.elf *.txt wave.vcd img
+	rm -rf *.bin *.elf *.txt *.s wave.vcd img
 	-find . -name "*.o" -type f -delete
 
