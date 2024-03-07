@@ -5,43 +5,58 @@ module id(
     // from ifetch
     input [31:0]    inst_i,
     input [63:0]    pc_i,
-    // forward
-    input [4:0]     ex_rd_i,
-    input [4:0]     mem_rd_i,
-    input [4:0]     wb_rd_i,
-    input [63:0]    ex_wdata_i,
-    input [63:0]    mem_wdata_i,
-    input [63:0]    wb_wdata_i,
-    // from regfile
+    // forward-regfile
+    input [4:0]     rf_ex_rd_i,
+    input [4:0]     rf_mem_rd_i,
+    input [4:0]     rf_wb_rd_i,
+    input [63:0]    rf_ex_wdata_i,
+    input [63:0]    rf_mem_wdata_i,
+    input [63:0]    rf_wb_wdata_i,
+    // forward-csr
+    input [11:0]    csr_ex_addr_i,
+    input [11:0]    csr_mem_addr_i,
+    input [11:0]    csr_wb_addr_i,
+    input [63:0]    csr_ex_wdata_i,
+    input [63:0]    csr_mem_wdata_i,
+    input [63:0]    csr_wb_wdata_i,
+    // read regfile
     input [63:0]    rs1val_i,
     input [63:0]    rs2val_i,
+    // read csr
+    input [63:0]    csrVal_i,
     // read after load hazard
-    input prev_is_load_i,
+    input           prev_is_load_i,
     // to set jalr's link address
-    input is_compressed_i,
-    // to regfile
-    output reg [4:0] rs1_o,
-    output reg [4:0] rs2_o,
-    // decode result. to ex
-    output reg wen_o,
-    output reg [63:0] srcA_o,
-    output reg [63:0] srcB_o,
-    output reg [4:0]  rd_o,
-    output reg [4:0]  aluop_o,
+    input           is_compressed_i,
+    // read regfile
+    output reg [4:0]    rs1_o,
+    output reg [4:0]    rs2_o,
+    // read csr
+    output reg [11:0]   csr_addr_o,
+    // aluOp
+    output reg [63:0]   srcA_o,
+    output reg [63:0]   srcB_o,
+    output reg [4:0]    aluop_o,
+    // write regfile
+    output reg          rf_wen_o,
+    output reg [4:0]    rd_o,
     // mem
-    output reg load_o,
-    output reg store_o,
+    output reg          load_o,
+    output reg          store_o,
     output reg [2:0]    funct3_o,   // used by load/store
     output reg [63:0]   sdata_o,    // store data
     // to ifetch
-    output reg branch_o,
+    output reg          branch_o,
     output reg [63:0]   branch_target_o,
+    // write csr
+    output reg          csr_wen_o,
+    output reg [63:0]   csr_wdata_o,
     // control
-    output branch_flush_o,
-    output load_use_o,
+    output reg          branch_flush_o,
+    output reg          load_use_o,
     // debug
-    output [63:0]   pc_o,
-    output reg exit_o
+    output reg [63:0]   pc_o,
+    output reg          exit_o
 );
     task error(input [63:0] pc);
         $display("unsupported instruction at pc = %x", pc);
@@ -66,26 +81,33 @@ module id(
     wire [63:0] immB = `SEXT({inst[31], inst[7], inst[30:25], inst[11:8], 1'b0}, 13, 64);      // shift left by 1
 
     wire [63:0] rs1val = (rs1_o == 5'd0)? 0 :
-                        (rs1_o == ex_rd_i) ? ex_wdata_i :
-                        (rs1_o == mem_rd_i)? mem_wdata_i :
-                        (rs1_o == wb_rd_i)? wb_wdata_i:
+                        (rs1_o == rf_ex_rd_i) ? rf_ex_wdata_i :
+                        (rs1_o == rf_mem_rd_i)? rf_mem_wdata_i :
+                        (rs1_o == rf_wb_rd_i)?  rf_wb_wdata_i:
                         rs1val_i;
 
     wire [63:0] rs2val = (rs2_o == 5'd0)? 0 :
-                        (rs2_o == ex_rd_i) ? ex_wdata_i :
-                        (rs2_o == mem_rd_i)? mem_wdata_i :
-                        (rs2_o == wb_rd_i)? wb_wdata_i:
+                        (rs2_o == rf_ex_rd_i) ? rf_ex_wdata_i :
+                        (rs2_o == rf_mem_rd_i)? rf_mem_wdata_i :
+                        (rs2_o == rf_wb_rd_i)?  rf_wb_wdata_i:
                         rs2val_i;
 
+    wire [63:0] csrVal = (csr_addr_o == csr_ex_addr_i)? csr_ex_wdata_i:
+                        (csr_addr_o == csr_mem_addr_i)? csr_mem_wdata_i:
+                        (csr_addr_o == csr_wb_addr_i)?  csr_wb_wdata_i:
+                        csrVal_i;
     assign pc_o = pc_i;
     assign branch_flush_o = branch_o & ~load_use_o;
-    assign load_use_o = prev_is_load_i & ((ex_rd_i == rs1_o) | (ex_rd_i == rs2_o));
+    assign load_use_o = prev_is_load_i & ((rf_ex_rd_i == rs1_o) | (rf_ex_rd_i == rs2_o));
     // decode
     always @* begin
         // default values
         srcA_o = 0;
         srcB_o = 0;
-        wen_o = 0;
+        rf_wen_o = 0;
+        csr_wen_o = 0;
+        csr_wdata_o = 0;
+        csr_addr_o = 0;
         rd_o = 5'b0;
         aluop_o = `ALU_ADD;
         load_o = 1'b0;
@@ -99,7 +121,7 @@ module id(
         case (opcode)
             `OPCODE_ARITH_I:   begin   // I-type
                 // default values
-                wen_o = 1;
+                rf_wen_o = 1;
                 rd_o = rd;
                 srcA_o = rs1val;
                 srcB_o = immI;
@@ -118,7 +140,7 @@ module id(
 
             `OPCODE_ARITH_R:   begin
                 // rd = rs1 op rs2
-                wen_o = 1;
+                rf_wen_o = 1;
                 rd_o = rd;
                 srcA_o = rs1val;
                 srcB_o = rs2val;
@@ -169,7 +191,7 @@ module id(
 
             `OPCODE_RV64_ARITH_I: begin
                 // rd = rs1 op rs2
-                wen_o = 1'b1;
+                rf_wen_o = 1'b1;
                 rd_o = rd;
                 srcA_o = {32'b0, rs1val[31:0]};
                 srcB_o = immI;
@@ -184,7 +206,7 @@ module id(
 
             `OPCODE_RV64_ARITH_R: begin
                 // rd = rs1 op rs2
-                wen_o = 1'b1;
+                rf_wen_o = 1'b1;
                 rd_o = rd;
                 srcA_o = {32'b0, rs1val};
                 srcB_o = {32'b0, rs2val};
@@ -220,7 +242,7 @@ module id(
             `OPCODE_LOAD:   begin
                 // rd = M[rs1 + imm]
                 // ALU: calculate the address
-                wen_o = 1'b1;
+                rf_wen_o = 1'b1;
                 rd_o = rd;
                 load_o = 1'b1;
                 srcA_o = rs1val;
@@ -250,9 +272,9 @@ module id(
                 endcase
             end
 
-            `OPCODE_JAL:   begin   // J-type
+            `OPCODE_JAL:    begin   // J-type
                 // rd = pc + 4; pc += immJ
-                wen_o = 1;
+                rf_wen_o = 1;
                 rd_o = rd;
                 srcA_o = pc_i;
                 srcB_o = 64'd4;
@@ -260,9 +282,9 @@ module id(
                 branch_target_o = pc_i + immJ;
             end
 
-            `OPCODE_JALR:  begin   // I-type
+            `OPCODE_JALR:   begin   // I-type
                 // rd = pc + 4; pc += rs1 + immI
-                wen_o = 1;
+                rf_wen_o = 1;
                 rd_o = rd;
                 srcA_o = pc_i;
                 srcB_o = is_compressed_i? 64'd2: 64'd4;
@@ -270,23 +292,56 @@ module id(
                 branch_target_o = rs1val + immI;
             end
 
-            `OPCODE_AUIPC: begin   // U-type
+            `OPCODE_AUIPC:  begin   // U-type
                 // rd = pc + imm << 12
-                wen_o = 1'b1;
+                rf_wen_o = 1'b1;
                 rd_o = rd;
                 srcA_o = pc_i;
                 srcB_o = immU;
             end
 
-            `OPCODE_LUI:   begin   // U-type
+            `OPCODE_LUI:    begin   // U-type
                 // rd = imm << 12
-                wen_o = 1'b1;
+                rf_wen_o = 1'b1;
                 rd_o = rd;
                 srcA_o = immU;
                 srcB_o = 64'b0;
             end
 
-            `OPCODE_SYS:    exit_o = inst == `EBREAK;
+            `OPCODE_SYS:    begin
+                if (funct3 != `FCT3_ECALL_EBREAK_WFI)   begin
+                    // write regfile: x[rd] = CSRs[csr]
+                    rf_wen_o = 1;
+                    rd_o = rd;
+                    srcA_o = csrVal;
+                    srcB_o = 0;
+                    aluop_o = `ALU_ADD;
+                    // write csr
+                    csr_wen_o = 1;
+                    csr_addr_o = inst[31:20];
+                end
+                case (funct3)
+                    `FCT3_ECALL_EBREAK_WFI: begin
+                        case (inst[31:20])
+                            `IMM_EBREAK:    exit_o = 1'b1; 
+                            `IMM_MRET:;
+                            `IMM_SRET:;
+                            `IMM_URET:;
+                            `IMM_ECALL:;
+                            `IMM_WFI:;
+                            default:    error(pc_i);
+                        endcase
+                    end
+                    // these csr-insts will write both refgile & csr
+                    // write regfile could be done by alu
+                    `FCT3_CSRRW:    csr_wdata_o = rs1val;
+                    `FCT3_CSRRS:    csr_wdata_o = csrVal | rs1val;
+                    `FCT3_CSRRC:    csr_wdata_o = csrVal & ~rs1val;
+                    `FCT3_CSRRWI:   csr_wdata_o = {59'b0, rs1};
+                    `FCT3_CSRRSI:   csr_wdata_o = csrVal | {59'b0, rs1};
+                    `FCT3_CSRRCI:   csr_wdata_o = csrVal & ~{59'b0, rs1};
+                endcase
+            end
 
             default:    error(pc_i);
         endcase // opcode

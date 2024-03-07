@@ -137,6 +137,23 @@
 `define FCT3_BLTU       3'd6
 `define FCT3_BGEU       3'd7
 
+// sys
+`define FCT3_ECALL_EBREAK_WFI   3'd0
+`define FCT3_CSRRW      3'd1    // atomic read/write
+`define FCT3_CSRRS      3'd2    // atomic read/set
+`define FCT3_CSRRC      3'd3    // atomic read/clear
+`define FCT3_CSRRWI     3'd5
+`define FCT3_CSRRSI     3'd6
+`define FCT3_CSRRCI     3'd7
+
+`define IMM_WFI             12'h105
+//`define IMM_SFENCE_VMA
+`define IMM_ECALL           12'h000
+`define IMM_EBREAK          12'h001
+`define IMM_URET            12'h002
+`define IMM_SRET            12'h102
+`define IMM_MRET            12'h302
+
 /*  rvc */
 // ???
 

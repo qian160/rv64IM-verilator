@@ -1,31 +1,4 @@
-/**********  CSR **********/
-// Currently allocated RISC-V unprivileged CSR addresses.       UFO
-`define CYCLE           12'hc00     // Cycle counter for RDCYCLE instruction
-`define TIME            12'hc01     // Timer for RDTIME instruction
-`define INSTRET         12'hc02     // Instructions-retired counter for RDINSTRET instruction
-`define HPMCOUNTER3     12'hc03     // Performance-monitoring counter
-`define HPMCOUNTER4     12'hc04     // Performance-monitoring counter
-// ...
-`define HPMCOUNTER31    12'hc1f     // Performance-monitoring counter
-
-// Currently allocated RISC-V supervisor-level CSR addresses.   SRW
-// Supervisor Trap Setup
-`define SSTATUS         12'h100     // Supervisor status register
-`define SIE             12'h104     // Supervisor interrupt-enable register
-`define STVEC           12'h105     // Supervisor trap handler base address
-`define SCOUNTEREN      12'h106     // Supervisor counter enable
-// Supervisor Configuration
-`define SENVCFG         12'h10a     // Supervisor environment configuration register
-// Supervisor Trap Handling
-`define SSCRATCH        12'h140     // Scratch register for supervisor trap handlers
-`define SEPC            12'h141     // Supervisor exception program counter
-`define SCAUSE          12'h142     // Supervisor trap cause
-`define STVAL           12'h143     // Supervisor bad address or instruction
-`define SIP             12'h144     // Supervisor interrupt pending
-// Supervisor Protection and Translation
-`define SATP            12'h180     // Supervisor address translation and protection
-// Debug/Trace Registers
-`define SCONTEXT        12'h5a8     // Supervisor-mode context register.
+/*  run on machine mode only   */
 
 // Currently allocated RISC-V machine-level CSR addresses.
 // Machine Information Registers    MRO
@@ -67,3 +40,26 @@
 `define MHPMEVENT3      12'h323
 `define MHPMEVENT4      12'h324
 `define MHPMEVENT31     12'h33f
+
+module CSRFile (
+    input           clock,
+    input   [11:0]  raddr_i,
+    input   [11:0]  waddr_i,
+    input           wen_i,
+    input   [63:0]  wdata_i,
+
+    output  [63:0]  rdata_o
+);
+    reg [63:0] csr[0:1023];
+    initial begin
+        for (integer i = 0; i < 1024; i = i + 1)
+            csr[i] = 0;
+    end
+    // sequential write
+    always @(posedge clock) begin
+        if (wen_i)
+            csr[waddr_i] <= wdata_i;
+    end
+    // combinatianal read
+    assign rdata_o = csr[raddr_i];
+endmodule

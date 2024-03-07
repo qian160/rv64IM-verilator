@@ -3,31 +3,39 @@ module ex(
     input clock,
     input reset,
     // alu input
-    input [63:0] srcA_i,
-    input [63:0] srcB_i,
-    input [4:0]  aluop_i,
+    input   [63:0]  srcA_i,
+    input   [63:0]  srcB_i,
+    input   [4:0]   aluop_i,
     // mem
-    input load_i,
-    input store_i,
-    input [2:0]     funct3_i,
-    input [63:0]    sdata_i,
-    // wb
-    input wen_i,
-    input exit_i,
-    input [4:0]     rd_i,
-    input [63:0]    pc_i,       // debug
-
-    output load_o,
-    output store_o,
-    output [2:0]    funct3_o,
-    output [63:0]   sdata_o,
-    output wen_o,
-    output [4:0]    rd_o,
-    output reg [63:0]   aluout_o,
-    // control
-    output div_not_ready_o,
+    input           load_i,
+    input           store_i,
+    input   [2:0]   funct3_i,
+    input   [63:0]  sdata_i,
+    // write regfile
+    input           wen_i,
+    input   [4:0]   rd_i,
+    // write csr
+    input           csr_wen_i,
+    input   [11:0]  csr_addr_i,
+    input   [63:0]  csr_wdata_i,
     // debug
-    output [63:0]       pc_o,
+    input           exit_i,
+    input   [63:0]  pc_i,
+
+    output          csr_wen_o,
+    output  [11:0]  csr_addr_o,
+    output  [63:0]  csr_wdata_o,
+    output          load_o,
+    output          store_o,
+    output  [2:0]   funct3_o,
+    output  [63:0]  sdata_o,
+    output          wen_o,
+    output  [4:0]   rd_o,
+    output  reg [63:0]   aluout_o,
+    // control
+    output          div_not_ready_o,
+    // debug
+    output  [63:0]  pc_o,
     output exit_o
 );
     /* verilator lint_off SELRANGE */
@@ -145,4 +153,7 @@ module ex(
     assign store_o = store_i;
     assign funct3_o = funct3_i;
     assign sdata_o  = sdata_i;
+    assign csr_addr_o = csr_addr_i;
+    assign csr_wen_o = csr_wen_i;
+    assign csr_wdata_o = csr_wdata_i;
 endmodule

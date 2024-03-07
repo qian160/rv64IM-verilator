@@ -3,17 +3,19 @@ TODO: cache, branch-predictor?
 */
 `include "define.v"
 module ifetch (
-    input clock,
-    input reset,
+    input           clock,
+    input           reset,
     // control
-    input stall_i,
-    input flush_i,      // donecare
+    input           stall_i,
+    input           flush_i,      // donecare
     // from memory
     input  [31:0]   inst_i,
-    // from id
-    input  branch_i,
+    // from id. branch result
+    input           branch_i,
     input  [63:0]   branch_target_i,
-    output is_compressed_o,
+    // used by id's jalr
+    output          is_compressed_o,
+    // fetch
     output [63:0]   pc_o,
     output [31:0]   inst_o
 );

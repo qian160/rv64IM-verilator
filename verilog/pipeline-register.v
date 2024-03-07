@@ -29,38 +29,48 @@ module if_id (
 endmodule
 
 module id_ex (
-    input clock,
-    input reset,
-    input stall_i,
-    input flush_i,
+    input           clock,
+    input           reset,
+    input           stall_i,
+    input           flush_i,
     // alu input
-    input [63:0] srcA_i,
-    input [63:0] srcB_i,
-    input [4:0]  aluop_i,
+    input [63:0]    srcA_i,
+    input [63:0]    srcB_i,
+    input [4:0]     aluop_i,
     // mem
-    input load_i,
-    input store_i,
+    input           load_i,
+    input           store_i,
     input [2:0]     funct3_i,
     input [63:0]    sdata_i,
-    // wb
-    input wen_i,
-    input exit_i,
+    // write regfile
+    input           wen_i,
     input [4:0]     rd_i,
+    // write csr
+    input           csr_wen_i,
+    input [11:0]    csr_addr_i,
+    input [63:0]    csr_wdata_i,
+    /// debug
+    input           exit_i,
     input [63:0]    pc_i,
     // alu input
-    output reg [63:0] srcA_o,
-    output reg [63:0] srcB_o,
-    output reg [4:0]  aluop_o,
+    output reg [63:0]   srcA_o,
+    output reg [63:0]   srcB_o,
+    output reg [4:0]    aluop_o,
     // mem
-    output reg load_o,
-    output reg store_o,
-    output reg [2:0]     funct3_o,
-    output reg [63:0]    sdata_o,
-    // wb
-    output reg wen_o,
-    output reg exit_o,
-    output reg [4:0]     rd_o,
-    output reg [63:0]    pc_o
+    output reg          load_o,
+    output reg          store_o,
+    output reg [2:0]    funct3_o,
+    output reg [63:0]   sdata_o,
+    // write regfile
+    output reg          wen_o,
+    output reg [4:0]    rd_o,
+    // write csr
+    output reg          csr_wen_o,
+    output reg [11:0]   csr_addr_o,
+    output reg [63:0]   csr_wdata_o,
+    // debug
+    output reg          exit_o,
+    output reg [63:0]   pc_o
 );
     always @(posedge clock) begin
         if (reset | flush_i)    begin
@@ -75,6 +85,9 @@ module id_ex (
             store_o <= 0;
             wen_o <= 0;
             exit_o <= 0;
+            csr_wen_o <= 0;
+            csr_addr_o <= 0;
+            csr_wdata_o <= 0;
         end
 
         else if (~stall_i)      begin
@@ -89,6 +102,9 @@ module id_ex (
             store_o <= store_i;
             wen_o <= wen_i;
             exit_o <= exit_i;
+            csr_wen_o <= csr_wen_i;
+            csr_addr_o <= csr_addr_i;
+            csr_wdata_o <= csr_wdata_i;
         end
     end
 endmodule
@@ -99,28 +115,36 @@ module ex_mem (
     input   stall_i,                // not being used in fact
     input   flush_i,
     // mem
-    input   store_i,
-    input   load_i,
+    input           store_i,
+    input           load_i,
     input   [63:0]  sdata_i,
     input   [2:0]   funct3_i,
     input   [63:0]  aluout_i,       // load/store address, or data to regfile
-    // wb
-    input   wen_i,
+    // write regfile
+    input           wen_i,
     input   [4:0]   rd_i,
-    input   exit_i,
+    // write csr
+    input           csr_wen_i,
+    input   [11:0]  csr_addr_i,
+    input   [63:0]  csr_wdata_i,
     // debug
+    input           exit_i,
     input   [63:0]  pc_i,
     // mem
-    output reg  store_o,
-    output reg  load_o,
+    output reg          store_o,
+    output reg          load_o,
     output reg  [63:0]  sdata_o,
     output reg  [2:0]   funct3_o,
     output reg  [63:0]  aluout_o,
-    // wb
-    output reg  wen_o,
+    // write regfile
+    output reg          wen_o,
     output reg  [4:0]   rd_o,
-    output reg  exit_o,
+    // write csr
+    output reg          csr_wen_o,
+    output reg [11:0]   csr_addr_o,
+    output reg [63:0]   csr_wdata_o,
     // debug
+    output reg          exit_o,
     output reg  [63:0]  pc_o
 );
     always @(posedge clock) begin
@@ -134,6 +158,9 @@ module ex_mem (
             store_o <= 0;
             wen_o <= 0;
             exit_o <= 0;
+            csr_wen_o <= 0;
+            csr_addr_o <= 0;
+            csr_wdata_o <= 0;
         end
 
         else    begin
@@ -146,6 +173,9 @@ module ex_mem (
             store_o <= store_i;
             wen_o <= wen_i;
             exit_o <= exit_i;
+            csr_wen_o <= csr_wen_i;
+            csr_addr_o <= csr_addr_i;
+            csr_wdata_o <= csr_wdata_i;
         end
     end
 endmodule
@@ -153,41 +183,51 @@ endmodule
 module mem_wb (
     input   clock,
     input   reset,
-    // regfile
-    input   wen_i,
-    input   [4:0]     rd_i,
-    input   [63:0]    wdata_i,
+    // write regfile
+    input           wen_i,
+    input   [4:0]   rd_i,
+    input   [63:0]  wdata_i,
+    // write csr
+    input           csr_wen_i,
+    input   [11:0]  csr_addr_i,
+    input   [63:0]  csr_wdata_i,
     // debug
-    input   exit_i,
-    input   [63: 0]  pc_i,
-    input   [63: 0]  a0_i,
+    input               exit_i,
+    input   [63: 0]     pc_i,
 
-    // regfile
-    output reg  wen_o,
-    output reg  [4:0]     rd_o,
-    output reg  [63:0]    wdata_o,
+    // write regfile
+    output reg          wen_o,
+    output reg  [4:0]   rd_o,
+    output reg  [63:0]  wdata_o,
+    // write csr
+    output reg          csr_wen_o,
+    output reg  [11:0]  csr_addr_o,
+    output reg  [63:0]  csr_wdata_o,
     // debug
-    output reg  exit_o,
-    output reg  [63: 0]  pc_o,
-    output reg  [63: 0]  a0_o
+    output reg          exit_o,
+    output reg  [63:0]  pc_o
 );
     always @(posedge clock ) begin
         if (reset)  begin
             wdata_o <= 0;
             pc_o <= `PMEM_START;
-            a0_o <= 0;
             rd_o <= 0;
             wen_o <= 0;
             exit_o <= 0;
+            csr_wen_o <= 0;
+            csr_addr_o <= 0;
+            csr_wdata_o <= 0;
         end
 
         else    begin
             wdata_o <= wdata_i;
             pc_o <= pc_i;
-            a0_o <= a0_i;
             rd_o <= rd_i;
             wen_o <= wen_i;
             exit_o <= exit_i;
+            csr_wen_o <= csr_wen_i;
+            csr_addr_o <= csr_addr_i;
+            csr_wdata_o <= csr_wdata_i;
         end
     end
 endmodule

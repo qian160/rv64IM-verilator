@@ -21,7 +21,7 @@ module top(
         .branch_target_i(ID.branch_target_o),
         // control
         .stall_i(CONT.stall_o[0]),
-        .flush_i(CONT.flush_o[0]),
+        .flush_i(CONT.flush_o[0])
     );
 
     if_id IF_ID(
@@ -30,27 +30,34 @@ module top(
         .stall_i(CONT.stall_o[1]),
         .flush_i(CONT.flush_o[1]),
         .inst_i(IF.inst_o),
-        .pc_i(IF.pc_o),
+        .pc_i(IF.pc_o)
     );
 
     id ID(
         .clock(clock),
         .reset(reset),
-        // from inst memory
+        // inst fetch
         .inst_i(IF_ID.inst_o),
         .pc_i(IF_ID.pc_o),
-        // from regfile
+        // read regfile
         .rs1val_i(RF.rdata1_o),
         .rs2val_i(RF.rdata2_o),
-        //
+        // read csr
+        .csrVal_i(CSR.rdata_o),
         .prev_is_load_i(EX.load_o),
         // forward
-        .ex_rd_i(EX.rd_o),
-        .mem_rd_i(MEM.rd_o),
-        .wb_rd_i(WB.rd_o),
-        .ex_wdata_i(EX.aluout_o),
-        .mem_wdata_i(MEM.wdata_o),
-        .wb_wdata_i(WB.wdata_o),
+        .rf_ex_rd_i(EX.rd_o),
+        .rf_mem_rd_i(MEM.rd_o),
+        .rf_wb_rd_i(WB.rd_o),
+        .rf_ex_wdata_i(EX.aluout_o),
+        .rf_mem_wdata_i(MEM.wdata_o),
+        .rf_wb_wdata_i(WB.wdata_o),
+        .csr_ex_addr_i(EX.csr_addr_o),
+        .csr_mem_addr_i(MEM.csr_addr_o),
+        .csr_wb_addr_i(WB.csr_addr_o),
+        .csr_ex_wdata_i(EX.csr_wdata_o),
+        .csr_mem_wdata_i(MEM.csr_wdata_o),
+        .csr_wb_wdata_i(WB.csr_wdata_o)
     );
 
     id_ex ID_EX(
@@ -59,12 +66,17 @@ module top(
         // control
         .stall_i(CONT.stall_o[2]),
         .flush_i(CONT.flush_o[2]),
-        // decode result
+        // alu input
         .srcA_i(ID.srcA_o),
         .srcB_i(ID.srcB_o),
-        .rd_i(ID.rd_o),
         .aluop_i(ID.aluop_o),
-        .wen_i(ID.wen_o),
+        // write regfile
+        .rd_i(ID.rd_o),
+        .wen_i(ID.rf_wen_o),
+        // write csr
+        .csr_wen_i(ID.csr_wen_o),
+        .csr_addr_i(ID.csr_addr_o),
+        .csr_wdata_i(ID.csr_wdata_o),
         // mem
         .load_i(ID.load_o),
         .store_i(ID.store_o),
@@ -72,18 +84,23 @@ module top(
         .sdata_i(ID.sdata_o),
         // debug
         .pc_i(ID.pc_o),
-        .exit_i(ID.exit_o),
+        .exit_i(ID.exit_o)
     );
 
     ex EX(
         .clock(clock),
         .reset(reset),
-        // decode result
+        // alu input
         .srcA_i(ID_EX.srcA_o),
         .srcB_i(ID_EX.srcB_o),
-        .rd_i(ID_EX.rd_o),
         .aluop_i(ID_EX.aluop_o),
+        // write regfile
+        .rd_i(ID_EX.rd_o),
         .wen_i(ID_EX.wen_o),
+        // write csr
+        .csr_wen_i(ID_EX.csr_wen_o),
+        .csr_addr_i(ID_EX.csr_addr_o),
+        .csr_wdata_i(ID_EX.csr_wdata_o),
         // mem
         .load_i(ID_EX.load_o),
         .store_i(ID_EX.store_o),
@@ -91,7 +108,7 @@ module top(
         .sdata_i(ID_EX.sdata_o),
         // debug
         .pc_i(ID_EX.pc_o),
-        .exit_i(ID_EX.exit_o),
+        .exit_i(ID_EX.exit_o)
     );
 
     ex_mem EX_MEM(
@@ -104,13 +121,18 @@ module top(
         .store_i(EX.store_o),
         .sdata_i(EX.sdata_o),
         .funct3_i(EX.funct3_o),
-        // write back
+        // write regfile
         .wen_i(EX.wen_o),
         .rd_i(EX.rd_o),
+        // alu output
         .aluout_i(EX.aluout_o),
+        // write csr
+        .csr_wen_i(EX.csr_wen_o),
+        .csr_addr_i(EX.csr_addr_o),
+        .csr_wdata_i(EX.csr_wdata_o),
         // debug
         .pc_i(EX.pc_o),
-        .exit_i(EX.exit_o),
+        .exit_i(EX.exit_o)
     );
 
     mem MEM(
@@ -123,58 +145,79 @@ module top(
         .store_i(EX_MEM.store_o),
         .sdata_i(EX_MEM.sdata_o),
         .funct3_i(EX_MEM.funct3_o),
-        // write back
+        // write regfile
         .wen_i(EX_MEM.wen_o),
         .rd_i(EX_MEM.rd_o),
+        // alu output
         .aluout_i(EX_MEM.aluout_o),
+        // write csr
+        .csr_wen_i(EX_MEM.csr_wen_o),
+        .csr_addr_i(EX_MEM.csr_addr_o),
+        .csr_wdata_i(EX_MEM.csr_wdata_o),
         // debug
         .pc_i(EX_MEM.pc_o),
-        .exit_i(EX_MEM.exit_o),
+        .exit_i(EX_MEM.exit_o)
     );
 
     mem_wb MEM_WB(
         .clock(clock),
         .reset(reset),
-        // wb
+        // write regfile
         .wen_i(MEM.wen_o),
         .rd_i(MEM.rd_o),
         .wdata_i(MEM.wdata_o),
+        // write csr
+        .csr_wen_i(MEM.csr_wen_o),
+        .csr_addr_i(MEM.csr_addr_o),
+        .csr_wdata_i(MEM.csr_wdata_o),
         // debug
         .exit_i(MEM.exit_o),
-        .pc_i(MEM.pc_o),
+        .pc_i(MEM.pc_o)
     );
 
     wb WB(
         .clock(clock),
         .reset(reset),
-        // wb
+        // write regfile
         .wen_i(MEM_WB.wen_o),
         .rd_i(MEM_WB.rd_o),
         .wdata_i(MEM_WB.wdata_o),
+        // write csr
+        .csr_wen_i(MEM_WB.csr_wen_o),
+        .csr_addr_i(MEM_WB.csr_addr_o),
+        .csr_wdata_i(MEM_WB.csr_wdata_o),
         // debug
         .exit_i(MEM_WB.exit_o),
         .pc_i(MEM_WB.pc_o),
         // ?
-        .a0_i(RF.a0_o),
+        .a0_i(RF.a0_o)
     );
 
     regfile RF(
         .clock(clock),
         .reset(reset),
-        // id
+        // id: read 
         .rs1_i(ID.rs1_o),
         .rs2_i(ID.rs2_o),
-        // wb
+        // write back
         .wen_i(WB.wen_o),
         .rd_i(WB.rd_o),
-        .wdata_i(WB.wdata_o),
+        .wdata_i(WB.wdata_o)
+    );
+
+    CSRFile CSR(
+        .clock(clock),
+        .raddr_i(ID.csr_addr_o),
+        .waddr_i(WB.csr_addr_o),
+        .wen_i(WB.csr_wen_o),
+        .wdata_i(WB.csr_wdata_o)
     );
 
     control CONT(
         .clock(clock),
         .id_branch_flush_i(ID.branch_flush_o),
         .ex_div_i(EX.div_not_ready_o),
-        .id_load_use_i(ID.load_use_o),
+        .id_load_use_i(ID.load_use_o)
     );
 
 //    srt_tb st(.clock(clock));

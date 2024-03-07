@@ -3,29 +3,38 @@ import "DPI-C" function void set_mem_ptr(input logic [63:0] a[]);
 module mem(
     input   clock,
     input   reset,
-    // ifetch, combinational logic. no pipeline register
+    // ifetch, combinational read
     input   [63:0]  if_pc_i,
     // mem
-    input   store_i,
-    input   load_i,
+    input           store_i,
+    input           load_i,
     input   [63:0]  sdata_i,
     input   [2:0]   funct3_i,
     input   [63:0]  aluout_i,     // load/store address, or data to regfile
-    // wb
-    input   wen_i,
+    // write regfile
+    input           wen_i,
     input   [4:0]   rd_i,
-    input   exit_i,
+    // write csr
+    input           csr_wen_i,
+    input   [11:0]  csr_addr_i,
+    input   [63:0]  csr_wdata_i,
     // debug
+    input           exit_i,
     input   [63:0]  pc_i,
-    // wb
-    output  wen_o,
+
+    // write regfile
+    output          wen_o,
     output  [4:0]   rd_o,
     output  [63:0]  wdata_o,
-    output  [63:0]  pc_o,
+    // write csr
+    output          csr_wen_o,
+    output  [11:0]  csr_addr_o,
+    output  [63:0]  csr_wdata_o,
     // debug
-    output  exit_o,
+    output  [63:0]  pc_o,
+    output          exit_o,
     // ifetch
-    output reg [31:0]   inst_o
+    output  [31:0]  inst_o
 );
     /*  ifetch  */
     wire [63:0] pc_off;
@@ -39,9 +48,7 @@ module mem(
         $display("hello world!");
     end
 
-    always @(*) begin
-        inst_o = {mem[pc_off+3], mem[pc_off+2], mem[pc_off+1], mem[pc_off]};
-    end
+    assign inst_o = {mem[pc_off+3], mem[pc_off+2], mem[pc_off+1], mem[pc_off]};
     /*  end ifetch  */
     reg [63:0] load_data;
     wire [1:0] width = funct3_i[1:0];
@@ -83,5 +90,9 @@ module mem(
 
     assign pc_o = pc_i;
     assign exit_o = exit_i;
+
+    assign csr_addr_o = csr_addr_i;
+    assign csr_wen_o = csr_wen_i;
+    assign csr_wdata_o = csr_wdata_i;
 
 endmodule
