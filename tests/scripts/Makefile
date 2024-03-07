@@ -1,6 +1,7 @@
 .PHONY: build run
 
 CC = riscv64-linux-gnu-gcc
+RVCC = ../rvcc/target/rvcc		# relevent to the 'test' folder
 LD = riscv64-linux-gnu-ld
 OBJCOPY = riscv64-linux-gnu-objcopy
 OBJDUMP = riscv64-linux-gnu-objdump
@@ -36,11 +37,18 @@ LINKAGE		  += $(OBJS) lib/lib.o
 lib/lib.o: lib/lib.c
 	@$(CC) -c $(CFLAGS) -c -o $@ $<
 
-build: $(LINKAGE)
+build_gcc: 	$(LINKAGE)
 	$(CC) -c $(CFLAGS) $(NAME).c
 	$(LD) -o $(NAME).elf $(LDFLAGS) --start-group $(NAME).o $(LINKAGE) --end-group
 	$(OBJDUMP) -d $(NAME).elf -M no-aliases > $(NAME).txt
 	$(OBJCOPY) -S --set-section-flags .bss=alloc,contents -O binary $(NAME).elf $(NAME).bin
+
+build_rvcc:	$(LINKAGE)
+	$(RVCC) -S $(NAME).c -o rvcc-$(NAME).s -Iinclude
+	$(AS) $(ASFLAGS) rvcc-$(NAME).s  -o rvcc-$(NAME).o
+	$(LD) -o rvcc-$(NAME).elf $(LDFLAGS) --start-group rvcc-$(NAME).o $(LINKAGE) --end-group
+	$(OBJDUMP) -d rvcc-$(NAME).elf -M no-aliases > rvcc-$(NAME).txt
+	$(OBJCOPY) -S --set-section-flags .bss=alloc,contents -O binary rvcc-$(NAME).elf rvcc-$(NAME).bin
 run:
 
 echo:

@@ -38,7 +38,7 @@ int f3(int n, int l) {
 int ans[] = {38270, 218, 20};
 
 int main() {
-  int x __attribute__((unused)) = func[0](14371, 0);
+  int x = func[0](14371, 0);
   check(x == ans[0]);   // answer
   check(rec == ans[1]); // # recursions
   check(lvl == ans[2]); // max depth

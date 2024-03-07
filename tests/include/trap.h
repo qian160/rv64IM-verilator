@@ -1,7 +1,7 @@
 #include <stddef.h>
-#include <stdarg.h>
+//#include <stdarg.h>
 #include <stdbool.h>
-#include <stdio.h>
+//#include <stdio.h>
 
 #ifndef __TRAP_H__
 #define __TRAP_H__
@@ -16,12 +16,24 @@
 #define CONCAT(x, y)        _CONCAT(x, y)
 
 
-__attribute__((noinline))
+//__attribute__((noinline))
 void halt(int code) {
-    asm volatile("mv a0, %0; ebreak" : :"r"(code));
+    if (code == 0) {
+        asm(
+            "li a0, 0\n"
+            "ebreak\n"
+        );
+    }
+    else {
+        asm(
+            "li a0, 1\n"
+            "ebreak\n"
+        );
+    }
+//    asm volatile("mv a0, %0; ebreak" : :"r"(code));
 }
 
-__attribute__((noinline))
+//__attribute__((noinline))
 void check(_Bool cond) {
     if (!cond) halt(1);
 }

@@ -17,25 +17,36 @@ print_red 	 = @printf "$(COLOR_RED)$(1)$(COLOR_NONE)\n"
 #ALL = $(basename $(notdir $(shell find . -name "*.c")))
 ALL = $(basename $(shell ls *.c))
 
-all: $(addprefix Makefile., $(ALL))
+all: $(addprefix gcc., $(ALL)) $(addprefix rvcc., $(ALL))
 	@echo "" $(ALL)
 
-$(ALL): %: Makefile.%
+$(ALL): %: gcc.%
 
 # compile(vtop) -> compile(image file) -> load -> run
-Makefile.%: %.c $(LINKAGE)
+gcc.%: %.c $(LINKAGE)
 	$(call print_yellow,====building img $*...=== )
-	@make -s -f scripts/Makefile NAME=$* build
+	@make -s -f scripts/Makefile NAME=$* build_gcc
 	$(call print_yellow,====loading img $*...===)
 	@../utils/load $*.bin
 	$(call print_green,====start simulating...===)
 	@../obj_dir/Vtop 114514\
-		&& printf "[%14s] $(COLOR_GREEN)PASS!$(COLOR_NONE)\n" $* >> $(RESULT)\
-		|| printf "[%14s] $(COLOR_RED)FAIL!$(COLOR_NONE)\n" $* >> $(RESULT)
-#usage 1. make Makefile.xxx 2. make test_all
+		&& printf "[%18s] $(COLOR_GREEN)PASS!$(COLOR_NONE)\n" gcc-$* >> $(RESULT)\
+		|| printf "[%18s] $(COLOR_RED)FAIL!$(COLOR_NONE)\n" gcc-$* >> $(RESULT)
+
+rvcc.%: %.c $(LINKAGE)
+	$(call print_yellow,====building img $*...=== )
+	@make -s -f scripts/Makefile NAME=$* build_rvcc
+	$(call print_yellow,====loading img $*...===)
+	@../utils/load rvcc-$*.bin
+	$(call print_green,====start simulating...===)
+	@../obj_dir/Vtop 114514\
+		&& printf "[%20s] $(COLOR_GREEN)PASS!$(COLOR_NONE)\n" rvcc-$* >> $(RESULT)\
+		|| printf "[%20s] $(COLOR_RED)FAIL!$(COLOR_NONE)\n" rvcc-$* >> $(RESULT)
+
+#usage 1. make gcc.xxx 2. make rvcc.xxx 3. make test_all
 test_all: all
 	@cat $(RESULT)
-	@rm $(RESULT)
+#	@rm $(RESULT)
 
 clean:
 	rm -rf *.bin *.elf *.txt wave.vcd img
