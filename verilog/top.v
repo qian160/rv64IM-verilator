@@ -19,6 +19,11 @@ module top(
         // next_pc
         .branch_i(ID.branch_o),
         .branch_target_i(ID.branch_target_o),
+        .exception_i(WB.exception_o),
+        .mtvec_i(CSR.mtvec_o),  // RAW?
+        .mcause_i(WB.mcause_o),
+        .mret_i(ID.mret_o),
+        .mepc_i(CSR.mepc_o),
         // control
         .stall_i(CONT.stall_o[0]),
         .flush_i(CONT.flush_o[0])
@@ -82,9 +87,10 @@ module top(
         .store_i(ID.store_o),
         .funct3_i(ID.funct3_o),
         .sdata_i(ID.sdata_o),
-        // debug
-        .pc_i(ID.pc_o),
-        .exit_i(ID.exit_o)
+        // exception
+        .exception_i(ID.exception_o),
+        .mcause_i(ID.mcause_o),
+        .pc_i(ID.pc_o)
     );
 
     ex EX(
@@ -106,9 +112,10 @@ module top(
         .store_i(ID_EX.store_o),
         .funct3_i(ID_EX.funct3_o),
         .sdata_i(ID_EX.sdata_o),
-        // debug
-        .pc_i(ID_EX.pc_o),
-        .exit_i(ID_EX.exit_o)
+        // exception
+        .exception_i(ID_EX.exception_o),
+        .mcause_i(ID_EX.mcause_o),
+        .pc_i(ID_EX.pc_o)
     );
 
     ex_mem EX_MEM(
@@ -130,9 +137,10 @@ module top(
         .csr_wen_i(EX.csr_wen_o),
         .csr_addr_i(EX.csr_addr_o),
         .csr_wdata_i(EX.csr_wdata_o),
-        // debug
-        .pc_i(EX.pc_o),
-        .exit_i(EX.exit_o)
+        // exception
+        .exception_i(EX.exception_o),
+        .mcause_i(EX.mcause_o),
+        .pc_i(EX.pc_o)
     );
 
     mem MEM(
@@ -154,9 +162,10 @@ module top(
         .csr_wen_i(EX_MEM.csr_wen_o),
         .csr_addr_i(EX_MEM.csr_addr_o),
         .csr_wdata_i(EX_MEM.csr_wdata_o),
-        // debug
-        .pc_i(EX_MEM.pc_o),
-        .exit_i(EX_MEM.exit_o)
+        // exception
+        .exception_i(EX_MEM.exception_o),
+        .mcause_i(EX_MEM.mcause_o),
+        .pc_i(EX_MEM.pc_o)
     );
 
     mem_wb MEM_WB(
@@ -170,8 +179,9 @@ module top(
         .csr_wen_i(MEM.csr_wen_o),
         .csr_addr_i(MEM.csr_addr_o),
         .csr_wdata_i(MEM.csr_wdata_o),
-        // debug
-        .exit_i(MEM.exit_o),
+        // exception
+        .exception_i(MEM.exception_o),
+        .mcause_i(MEM.mcause_o),
         .pc_i(MEM.pc_o)
     );
 
@@ -186,8 +196,9 @@ module top(
         .csr_wen_i(MEM_WB.csr_wen_o),
         .csr_addr_i(MEM_WB.csr_addr_o),
         .csr_wdata_i(MEM_WB.csr_wdata_o),
-        // debug
-        .exit_i(MEM_WB.exit_o),
+        // exception
+        .exception_i(MEM_WB.exception_o),
+        .mcause_i(MEM_WB.mcause_o),
         .pc_i(MEM_WB.pc_o),
         // ?
         .a0_i(RF.a0_o)
@@ -207,6 +218,8 @@ module top(
 
     CSRFile CSR(
         .clock(clock),
+        .exception_i(WB.exception_o),
+        .mcause_i(WB.mcause_o),
         .raddr_i(ID.csr_addr_o),
         .waddr_i(WB.csr_addr_o),
         .wen_i(WB.csr_wen_o),
@@ -216,6 +229,7 @@ module top(
     control CONT(
         .clock(clock),
         .id_branch_flush_i(ID.branch_flush_o),
+        .wb_exception_i(WB.exception_o),
         .ex_div_i(EX.div_not_ready_o),
         .id_load_use_i(ID.load_use_o)
     );

@@ -17,4 +17,4 @@ build: $(CPPSRC) $(VSRC)
 
 clean:
 	-rm  -rf obj_dir wave.vcd img*
-	-find . -type f '(' -name '*.o' -o -name '*.bin' -o -name '*.elf' -o -name '*.txt' ')' -delete
+	-find . -type f '(' -name '*.o' -o -name '*.bin' -o -name '*.elf' ')' -delete

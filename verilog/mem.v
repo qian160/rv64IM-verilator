@@ -18,8 +18,9 @@ module mem(
     input           csr_wen_i,
     input   [11:0]  csr_addr_i,
     input   [63:0]  csr_wdata_i,
-    // debug
-    input           exit_i,
+    // exception
+    input           exception_i,
+    input   [63:0]  mcause_i,
     input   [63:0]  pc_i,
 
     // write regfile
@@ -30,9 +31,11 @@ module mem(
     output          csr_wen_o,
     output  [11:0]  csr_addr_o,
     output  [63:0]  csr_wdata_o,
-    // debug
+    // exception
     output  [63:0]  pc_o,
-    output          exit_o,
+    output          exception_o,
+    output  [63:0]  mcause_o,
+
     // ifetch
     output  [31:0]  inst_o
 );
@@ -45,7 +48,6 @@ module mem(
     initial begin
         $readmemh("/home/s081/Downloads/projects/cpu/img", mem);
         set_mem_ptr(mem);
-        $display("hello world!");
     end
 
     assign inst_o = {mem[pc_off+3], mem[pc_off+2], mem[pc_off+1], mem[pc_off]};
@@ -88,11 +90,13 @@ module mem(
     assign rd_o = rd_i;
     assign wdata_o = load_i? load_data: aluout_i;
 
+    assign exception_o = exception_i;
+    assign mcause_o = mcause_i;
     assign pc_o = pc_i;
-    assign exit_o = exit_i;
 
     assign csr_addr_o = csr_addr_i;
     assign csr_wen_o = csr_wen_i;
     assign csr_wdata_o = csr_wdata_i;
 
+    assign exception_o = exception_i;
 endmodule

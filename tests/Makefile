@@ -48,6 +48,9 @@ test_all: all
 	@cat $(RESULT)
 	@rm $(RESULT)
 
+build:
+	make -C ../ build
+
 clean:
 	rm -rf *.bin *.elf *.txt *.s wave.vcd img
 	-find . -name "*.o" -type f -delete

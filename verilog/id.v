@@ -47,6 +47,7 @@ module id(
     output reg [63:0]   sdata_o,    // store data
     // to ifetch
     output reg          branch_o,
+    output reg          mret_o,
     output reg [63:0]   branch_target_o,
     // write csr
     output reg          csr_wen_o,
@@ -54,9 +55,10 @@ module id(
     // control
     output reg          branch_flush_o,
     output reg          load_use_o,
-    // debug
+    // exception
     output reg [63:0]   pc_o,
-    output reg          exit_o
+    output reg [63:0]   mcause_o,
+    output reg          exception_o
 );
     task error(input [63:0] pc);
         $display("unsupported instruction at pc = %x", pc);
@@ -102,22 +104,31 @@ module id(
     // decode
     always @* begin
         // default values
+        // alu
         srcA_o = 0;
         srcB_o = 0;
+        aluop_o = `ALU_ADD;
+        // write regfile
         rf_wen_o = 0;
+        rd_o = 5'b0;
+        // write csr
         csr_wen_o = 0;
         csr_wdata_o = 0;
         csr_addr_o = 0;
-        rd_o = 5'b0;
-        aluop_o = `ALU_ADD;
+        // mem
         load_o = 1'b0;
         store_o = 1'b0;
-        branch_o = 1'b0;
         sdata_o = 64'b0;
+        funct3_o = funct3;
+        // branch
+        branch_o = 1'b0;
         branch_target_o = 64'b0;
         rs1_o = rs1;
         rs2_o = rs2;
-        funct3_o = funct3;
+        // exception
+        exception_o = 1'b0;
+        mcause_o = 64'b0;
+        mret_o = 1'b0;
         case (opcode)
             `OPCODE_ARITH_I:   begin   // I-type
                 // default values
@@ -309,7 +320,7 @@ module id(
             end
 
             `OPCODE_SYS:    begin
-                if (funct3 != `FCT3_ECALL_EBREAK_WFI)   begin
+                if (funct3 != `FCT3_TRAP)   begin
                     // write regfile: x[rd] = CSRs[csr]
                     rf_wen_o = 1;
                     rd_o = rd;
@@ -321,10 +332,13 @@ module id(
                     csr_addr_o = inst[31:20];
                 end
                 case (funct3)
-                    `FCT3_ECALL_EBREAK_WFI: begin
+                    `FCT3_TRAP: begin
                         case (inst[31:20])
-                            `IMM_EBREAK:    exit_o = 1'b1; 
-                            `IMM_MRET:;
+                            `IMM_EBREAK:    begin
+                                exception_o = 1'b1;
+                                mcause_o = `BREAKPOINT;
+                            end
+                            `IMM_MRET:  mret_o = 1'b1;
                             `IMM_SRET:;
                             `IMM_URET:;
                             `IMM_ECALL:;

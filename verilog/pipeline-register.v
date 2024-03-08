@@ -49,9 +49,10 @@ module id_ex (
     input           csr_wen_i,
     input [11:0]    csr_addr_i,
     input [63:0]    csr_wdata_i,
-    /// debug
-    input           exit_i,
+    /// exception
+    input           exception_i,
     input [63:0]    pc_i,
+    input [63:0]    mcause_i,
     // alu input
     output reg [63:0]   srcA_o,
     output reg [63:0]   srcB_o,
@@ -68,8 +69,9 @@ module id_ex (
     output reg          csr_wen_o,
     output reg [11:0]   csr_addr_o,
     output reg [63:0]   csr_wdata_o,
-    // debug
-    output reg          exit_o,
+    // exception
+    output reg          exception_o,
+    output reg [63:0]   mcause_o,
     output reg [63:0]   pc_o
 );
     always @(posedge clock) begin
@@ -84,10 +86,11 @@ module id_ex (
             load_o <= 0;
             store_o <= 0;
             wen_o <= 0;
-            exit_o <= 0;
+            exception_o <= 0;
             csr_wen_o <= 0;
             csr_addr_o <= 0;
             csr_wdata_o <= 0;
+            mcause_o <= 0;
         end
 
         else if (~stall_i)      begin
@@ -101,10 +104,11 @@ module id_ex (
             load_o <= load_i;
             store_o <= store_i;
             wen_o <= wen_i;
-            exit_o <= exit_i;
+            exception_o <= exception_i;
             csr_wen_o <= csr_wen_i;
             csr_addr_o <= csr_addr_i;
             csr_wdata_o <= csr_wdata_i;
+            mcause_o <= mcause_i;
         end
     end
 endmodule
@@ -127,8 +131,9 @@ module ex_mem (
     input           csr_wen_i,
     input   [11:0]  csr_addr_i,
     input   [63:0]  csr_wdata_i,
-    // debug
-    input           exit_i,
+    // exception
+    input           exception_i,
+    input   [63:0]  mcause_i,
     input   [63:0]  pc_i,
     // mem
     output reg          store_o,
@@ -141,10 +146,11 @@ module ex_mem (
     output reg  [4:0]   rd_o,
     // write csr
     output reg          csr_wen_o,
-    output reg [11:0]   csr_addr_o,
-    output reg [63:0]   csr_wdata_o,
-    // debug
-    output reg          exit_o,
+    output reg  [11:0]  csr_addr_o,
+    output reg  [63:0]  csr_wdata_o,
+    // exception
+    output reg          exception_o,
+    output reg  [63:0]  mcause_o,
     output reg  [63:0]  pc_o
 );
     always @(posedge clock) begin
@@ -157,10 +163,11 @@ module ex_mem (
             load_o <= 0;
             store_o <= 0;
             wen_o <= 0;
-            exit_o <= 0;
+            exception_o <= 0;
             csr_wen_o <= 0;
             csr_addr_o <= 0;
             csr_wdata_o <= 0;
+            mcause_o <= 0;
         end
 
         else    begin
@@ -172,10 +179,11 @@ module ex_mem (
             load_o <= load_i;
             store_o <= store_i;
             wen_o <= wen_i;
-            exit_o <= exit_i;
+            exception_o <= exception_i;
             csr_wen_o <= csr_wen_i;
             csr_addr_o <= csr_addr_i;
             csr_wdata_o <= csr_wdata_i;
+            mcause_o <= mcause_i;
         end
     end
 endmodule
@@ -191,9 +199,10 @@ module mem_wb (
     input           csr_wen_i,
     input   [11:0]  csr_addr_i,
     input   [63:0]  csr_wdata_i,
-    // debug
-    input               exit_i,
-    input   [63: 0]     pc_i,
+    // exception
+    input           exception_i,
+    input   [63:0]  mcause_i,
+    input   [63:0]  pc_i,
 
     // write regfile
     output reg          wen_o,
@@ -203,8 +212,9 @@ module mem_wb (
     output reg          csr_wen_o,
     output reg  [11:0]  csr_addr_o,
     output reg  [63:0]  csr_wdata_o,
-    // debug
-    output reg          exit_o,
+    // exception
+    output reg          exception_o,
+    output reg  [63:0]  mcause_o,
     output reg  [63:0]  pc_o
 );
     always @(posedge clock ) begin
@@ -213,10 +223,11 @@ module mem_wb (
             pc_o <= `PMEM_START;
             rd_o <= 0;
             wen_o <= 0;
-            exit_o <= 0;
+            exception_o <= 0;
             csr_wen_o <= 0;
             csr_addr_o <= 0;
             csr_wdata_o <= 0;
+            mcause_o <= 0;
         end
 
         else    begin
@@ -224,10 +235,11 @@ module mem_wb (
             pc_o <= pc_i;
             rd_o <= rd_i;
             wen_o <= wen_i;
-            exit_o <= exit_i;
+            exception_o <= exception_i;
             csr_wen_o <= csr_wen_i;
             csr_addr_o <= csr_addr_i;
             csr_wdata_o <= csr_wdata_i;
+            mcause_o <= mcause_i;
         end
     end
 endmodule

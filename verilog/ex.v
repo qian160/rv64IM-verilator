@@ -18,8 +18,9 @@ module ex(
     input           csr_wen_i,
     input   [11:0]  csr_addr_i,
     input   [63:0]  csr_wdata_i,
-    // debug
-    input           exit_i,
+    // exception
+    input           exception_i,
+    input   [63:0]  mcause_i,
     input   [63:0]  pc_i,
 
     output          csr_wen_o,
@@ -34,9 +35,10 @@ module ex(
     output  reg [63:0]   aluout_o,
     // control
     output          div_not_ready_o,
-    // debug
-    output  [63:0]  pc_o,
-    output exit_o
+    // exception
+    output          exception_o,
+    output  [63:0]  mcause_o,
+    output  [63:0]  pc_o
 );
     /* verilator lint_off SELRANGE */
     // mult
@@ -147,8 +149,8 @@ module ex(
     assign wen_o = wen_i;
     assign rd_o = rd_i;
 
-    assign pc_o     = pc_i;
-    assign exit_o   = exit_i;
+    assign pc_o = pc_i;
+    assign exception_o = exception_i;
     assign load_o = load_i;
     assign store_o = store_i;
     assign funct3_o = funct3_i;
@@ -156,4 +158,6 @@ module ex(
     assign csr_addr_o = csr_addr_i;
     assign csr_wen_o = csr_wen_i;
     assign csr_wdata_o = csr_wdata_i;
+
+    assign mcause_o = mcause_i;
 endmodule

@@ -10,10 +10,11 @@ module wb(
     input           csr_wen_i,
     input   [11:0]  csr_addr_i,
     input   [63:0]  csr_wdata_i,
-    // debug
-    input           exit_i,
+    // exception
+    input           exception_i,    // to csr and ifetch
     input   [63:0]  pc_i,
-    input   [63:0]  a0_i,  // from regfile
+    input   [63:0]  mcause_i,
+    input   [63:0]  a0_i,           // from regfile
     // write regfile
     output  wen_o,
     output  [4:0]   rd_o,
@@ -21,7 +22,10 @@ module wb(
     // write csr
     output          csr_wen_o,
     output  [11:0]  csr_addr_o,
-    output  [63:0]  csr_wdata_o
+    output  [63:0]  csr_wdata_o,
+    // exception
+    output          exception_o,
+    output  [63:0]  mcause_o
 );
     assign rd_o = rd_i;
     assign wen_o = wen_i;
@@ -31,8 +35,11 @@ module wb(
     assign csr_addr_o = csr_addr_i;
     assign csr_wdata_o = csr_wdata_i;
 
+    assign exception_o = exception_i;
+    assign mcause_o = mcause_i;
+
     always @* begin
-        if(exit_i)   begin
+        if(exception_i & (mcause_i == `BREAKPOINT))   begin
             if(a0_i != 64'h0)
                 $display("\n\n hit \033[1;31mbad\033[0m trap at pc = %x", pc_i);
             else

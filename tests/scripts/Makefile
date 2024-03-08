@@ -17,9 +17,9 @@ OBJS += $(COBJS)
 
 $(ASMOBJS): %.o: %.S
 $(COBJS): %.o: %.c
-
+# when testing rvcc, close the 'C' extension
 COMMON_FLAGS  := -fno-pic -I./include -march=rv64im -mabi=lp64
-CFLAGS        += $(COMMON_FLAGS) -static -lc -mcmodel=medany -mstrict-align -fno-asynchronous-unwind-tables -fno-builtin -fno-stack-protector
+CFLAGS        += $(COMMON_FLAGS) -static -mcmodel=medany -mstrict-align -fno-asynchronous-unwind-tables -fno-builtin -fno-stack-protector
 ASFLAGS       += $(COMMON_FLAGS)
 LDFLAGS   	  += -T scripts/linker.ld --defsym=_pmem_start=0x80000000 --defsym=_entry_offset=0x0
 LDFLAGS   	  += --gc-sections -e _start
