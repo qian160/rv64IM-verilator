@@ -17,8 +17,8 @@ OBJS += $(COBJS)
 
 $(ASMOBJS): %.o: %.S
 $(COBJS): %.o: %.c
-# when testing rvcc, close the 'C' extension
-COMMON_FLAGS  := -fno-pic -I./include -march=rv64im -mabi=lp64
+# when testing rvcc, disable the 'C' extension
+COMMON_FLAGS  := -fno-pic -I./include -march=rv64imac -mabi=lp64
 CFLAGS        += $(COMMON_FLAGS) -static -mcmodel=medany -mstrict-align -fno-asynchronous-unwind-tables -fno-builtin -fno-stack-protector
 ASFLAGS       += $(COMMON_FLAGS)
 LDFLAGS   	  += -T scripts/linker.ld --defsym=_pmem_start=0x80000000 --defsym=_entry_offset=0x0
@@ -38,10 +38,10 @@ lib/lib.o: lib/lib.c
 	@$(CC) -c $(CFLAGS) -c -o $@ $<
 
 build_gcc: 	$(LINKAGE)
-	$(CC) -c $(CFLAGS) $(NAME).c
-	$(LD) -o $(NAME).elf $(LDFLAGS) --start-group $(NAME).o $(LINKAGE) --end-group
-	$(OBJDUMP) -d $(NAME).elf -M no-aliases > $(NAME).txt
-	$(OBJCOPY) -S --set-section-flags .bss=alloc,contents -O binary $(NAME).elf $(NAME).bin
+	$(CC) -c $(CFLAGS) $(NAME).c -o gcc-$(NAME).o
+	$(LD) -o gcc-$(NAME).elf $(LDFLAGS) --start-group gcc-$(NAME).o $(LINKAGE) --end-group
+	$(OBJDUMP) -d gcc-$(NAME).elf -M no-aliases > gcc-$(NAME).txt
+	$(OBJCOPY) -S --set-section-flags .bss=alloc,contents -O binary gcc-$(NAME).elf gcc-$(NAME).bin
 
 build_rvcc:	$(LINKAGE)
 	$(RVCC) -S $(NAME).c -o rvcc-$(NAME).s -Iinclude

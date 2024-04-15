@@ -58,16 +58,13 @@ void trap_handler() {
             break;
         case MACHINE_TIMER_INT:
             // reset counter
-            asm volatile(
-                "csrr t0, mtime\n"
-            );
             // mepc doesn't need to +4
             break;
         default:
             // mepc += 4
             asm volatile(
                 "csrr t0, mepc\n"
-                "addi t0, 4\n"
+                "addi t0, t0, 4\n"
                 "csrw mepc, t0\n"
             );
             break;

@@ -18,6 +18,9 @@ module ex(
     input           csr_wen_i,
     input   [11:0]  csr_addr_i,
     input   [63:0]  csr_wdata_i,
+    // rva
+    input           rva_valid_i,
+    input   [4:0]   funct5_i,
     // exception
     input           exception_i,
     input   [63:0]  mcause_i,
@@ -35,6 +38,9 @@ module ex(
     output  reg [63:0]   aluout_o,
     // control
     output          div_not_ready_o,
+    // rva
+    output          rva_valid_o,
+    output  [4:0]   funct5_o,
     // exception
     output          exception_o,
     output  [63:0]  mcause_o,
@@ -146,18 +152,24 @@ module ex(
         #1      mv  ld          (hazard detected)
         #2      mv  [nop] ld    (bubble)
     */
+    // write regfile
     assign wen_o = wen_i;
     assign rd_o = rd_i;
-
-    assign pc_o = pc_i;
-    assign exception_o = exception_i;
+    // write csr
+    assign csr_addr_o = csr_addr_i;
+    assign csr_wen_o = csr_wen_i;
+    assign csr_wdata_o = csr_wdata_i;
+    // load/store
     assign load_o = load_i;
     assign store_o = store_i;
     assign funct3_o = funct3_i;
     assign sdata_o  = sdata_i;
-    assign csr_addr_o = csr_addr_i;
-    assign csr_wen_o = csr_wen_i;
-    assign csr_wdata_o = csr_wdata_i;
-
+    // rva
+    assign rva_valid_o = rva_valid_i;
+    assign funct5_o = funct5_i;
+    // exception
+    assign exception_o = exception_i;
     assign mcause_o = mcause_i;
+    // debug
+    assign pc_o = pc_i;
 endmodule

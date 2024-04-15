@@ -49,6 +49,9 @@ module id_ex (
     input           csr_wen_i,
     input [11:0]    csr_addr_i,
     input [63:0]    csr_wdata_i,
+    // rva
+    input           rva_valid_i,
+    input   [4:0]   funct5_i,
     /// exception
     input           exception_i,
     input [63:0]    pc_i,
@@ -69,6 +72,9 @@ module id_ex (
     output reg          csr_wen_o,
     output reg [11:0]   csr_addr_o,
     output reg [63:0]   csr_wdata_o,
+    // rva
+    output reg          rva_valid_o,
+    output reg [4:0]    funct5_o,
     // exception
     output reg          exception_o,
     output reg [63:0]   mcause_o,
@@ -91,6 +97,8 @@ module id_ex (
             csr_addr_o <= 0;
             csr_wdata_o <= 0;
             mcause_o <= 0;
+            rva_valid_o <= 0;
+            funct5_o <= 0;
         end
 
         else if (~stall_i)      begin
@@ -109,6 +117,8 @@ module id_ex (
             csr_addr_o <= csr_addr_i;
             csr_wdata_o <= csr_wdata_i;
             mcause_o <= mcause_i;
+            rva_valid_o <= rva_valid_i;
+            funct5_o <= funct5_i;
         end
     end
 endmodule
@@ -131,6 +141,9 @@ module ex_mem (
     input           csr_wen_i,
     input   [11:0]  csr_addr_i,
     input   [63:0]  csr_wdata_i,
+    // rva
+    input           rva_valid_i,
+    input   [4:0]   funct5_i,
     // exception
     input           exception_i,
     input   [63:0]  mcause_i,
@@ -148,6 +161,9 @@ module ex_mem (
     output reg          csr_wen_o,
     output reg  [11:0]  csr_addr_o,
     output reg  [63:0]  csr_wdata_o,
+    // rva
+    output reg          rva_valid_o,
+    output reg  [4:0]   funct5_o,
     // exception
     output reg          exception_o,
     output reg  [63:0]  mcause_o,
@@ -168,6 +184,8 @@ module ex_mem (
             csr_addr_o <= 0;
             csr_wdata_o <= 0;
             mcause_o <= 0;
+            rva_valid_o <= 0;
+            funct5_o <= 0;
         end
 
         else    begin
@@ -184,6 +202,8 @@ module ex_mem (
             csr_addr_o <= csr_addr_i;
             csr_wdata_o <= csr_wdata_i;
             mcause_o <= mcause_i;
+            rva_valid_o <= rva_valid_i;
+            funct5_o <= funct5_i;
         end
     end
 endmodule

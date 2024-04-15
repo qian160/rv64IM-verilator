@@ -20,6 +20,8 @@
 `define OPCODE_LUI       7'b0110111
 `define OPCODE_AUIPC     7'b0010111
 `define OPCODE_SYS       7'b1110011
+`define OPCODE_FENCE     7'b0001111
+`define OPCODE_AMO       7'b0101111     // atomic memory operation
 // rv64
 `define OPCODE_RV64_ARITH_R  7'b0111011
 `define OPCODE_RV64_ARITH_I  7'b0011011
@@ -146,6 +148,21 @@
 `define FCT3_CSRRSI     3'd6
 `define FCT3_CSRRCI     3'd7
 
+// rva  inst[14:12]: 011 -> d, 010 -> w
+// all these rva insts will access memory, which can cause load-use hazard in id
+`define FCT5_LR         5'b00010
+`define FCT5_SC         5'b00011
+`define FCT5_AMOSWAP    5'b00001
+`define FCT5_AMOADD     5'b00000
+`define FCT5_AMOXOR     5'b00100
+`define FCT5_AMOAND     5'b01100
+`define FCT5_AMOOR      5'b01000
+`define FCT5_AMOMIN     5'b10000
+`define FCT5_AMOMAX     5'b10100
+`define FCT5_AMOMINU    5'b11000
+`define FCT5_AMOMAXU    5'b11100
+
+
 `define IMM_WFI             12'h105
 //`define IMM_SFENCE_VMA
 `define IMM_ECALL           12'h000
@@ -260,5 +277,56 @@
 
 `ifndef FUNCTION
 `define FUNCTION
+function [63:0] MAX;
+    input [63:0] a;
+    input [63:0] b;
+
+    begin
+        if ($signed(a) > $signed(b))
+            MAX = a;
+        else
+            MAX = b;
+    end
+
+endfunction
+
+function [63:0] MAXU;
+    input [63:0] a;
+    input [63:0] b;
+
+    begin
+        if (a > b)
+            MAXU = a;
+        else
+            MAXU = b;
+    end
+
+endfunction
+
+function [63:0] MIN;
+    input [63:0] a;
+    input [63:0] b;
+
+    begin
+        if ($signed(a) < $signed(b))
+            MIN = a;
+        else
+            MIN = b;
+    end
+
+endfunction
+
+function [63:0] MINU;
+    input [63:0] a;
+    input [63:0] b;
+
+    begin
+        if (a < b)
+            MINU = a;
+        else
+            MINU = b;
+    end
+
+endfunction
 
 `endif

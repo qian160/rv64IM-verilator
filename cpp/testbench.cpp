@@ -6,13 +6,12 @@
 
 using namespace std;
 
-vluint64_t TIME = 0;
-
 TestBench<Vtop> tb;
 Vtop *top = tb.getModule();
 
-extern void init_difftest();
 extern void init_sdb();
+
+extern void load(char *img_file);
 
 void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
 
@@ -37,7 +36,6 @@ static inline unique_ptr<cmd_info> get_cmd()
 
 extern Statistics statistics;
 extern CPU_state state;
-extern void dump_gpr();
 
 using ld = long double;
 void my_exit(int sig) 
@@ -50,7 +48,6 @@ void my_exit(int sig)
 	sprintf(buf, "finished in %lf ms\n#cycles = %ld, #insts = %ld, ipc = %lf", seconds * 1000, nr_cycles, nr_insts, ipc);
 	cout << buf << endl;
 	cout << "simulation frequency = " << statistics.nr_cycles / seconds << " hz" << endl;
-	//dump_gpr();
 	exit(state.cpu_gpr[10]);	// x10 = a0
 }
 
@@ -58,14 +55,18 @@ int main(int argc, char **argv)
 {
 	Verilated::commandArgs(argc, argv);
 	signal(SIGINT, my_exit);
+
+	if (argc < 2) {
+		cout << "need to provide an img_file!\n";
+		exit(1);
+	}
+
+	load(argv[1]);
 	tb.reset();
 	init_sdb();
+//	cmd_c("-1");
 
-	if (argc > 1)
-		#define TEST_ALL 1
-	IFDEF(TEST_ALL, cmd_c("-1"));
-
-	tb.trace("./wave.vcd");
+//	tb.trace("./wave.vcd");
 
 	while(!Verilated::gotFinish()){
 		cout << "(0x" << top -> pc_o << ")";

@@ -27,9 +27,8 @@ gcc.%: %.c $(LINKAGE)
 	$(call print_yellow,====building img $*...=== )
 	@make -s -f scripts/Makefile NAME=$* build_gcc
 	$(call print_yellow,====loading img $*...===)
-	@../utils/load $*.bin
 	$(call print_green,====start simulating...===)
-	@../obj_dir/Vtop 114514\
+	@../obj_dir/Vtop gcc-$*.bin \
 		&& printf "[%18s] $(COLOR_GREEN)PASS!$(COLOR_NONE)\n" gcc-$* >> $(RESULT)\
 		|| printf "[%18s] $(COLOR_RED)FAIL!$(COLOR_NONE)\n" gcc-$* >> $(RESULT)
 
@@ -37,9 +36,8 @@ rvcc.%: %.c $(LINKAGE)
 	$(call print_yellow,====building img $*...=== )
 	@make -s -f scripts/Makefile NAME=$* build_rvcc
 	$(call print_yellow,====loading img $*...===)
-	@../utils/load rvcc-$*.bin
 	$(call print_green,====start simulating...===)
-	@../obj_dir/Vtop 114514\
+	@../obj_dir/Vtop rvcc-$*.bin \
 		&& printf "[%20s] $(COLOR_GREEN)PASS!$(COLOR_NONE)\n" rvcc-$* >> $(RESULT)\
 		|| printf "[%20s] $(COLOR_RED)FAIL!$(COLOR_NONE)\n" rvcc-$* >> $(RESULT)
 

@@ -190,7 +190,7 @@ module SRT4_div(
     reg [1:0] next_state = DivFree;
     localparam DivFree = 2'd0, DivByZero = 2'd1, DivOn = 2'd2, DivEnd = 2'd3;
     wire signed [2:0] qi;
-    qselect qs(
+    qselect qsc(
         .b(B[63:60]),
         .p(PA[128:123]),
         .q(qi)

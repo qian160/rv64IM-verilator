@@ -49,7 +49,7 @@ module top(
         .rs2val_i(RF.rdata2_o),
         // read csr
         .csrVal_i(CSR.rdata_o),
-        .prev_is_load_i(EX.load_o),
+        .prev_is_load_or_rva_i(EX.load_o | EX.rva_valid_o),
         // forward
         .rf_ex_rd_i(EX.rd_o),
         .rf_mem_rd_i(MEM.rd_o),
@@ -87,6 +87,9 @@ module top(
         .store_i(ID.store_o),
         .funct3_i(ID.funct3_o),
         .sdata_i(ID.sdata_o),
+        // rva
+        .rva_valid_i(ID.rva_valid_o),
+        .funct5_i(ID.funct5_o),
         // exception
         .exception_i(ID.exception_o),
         .mcause_i(ID.mcause_o),
@@ -112,6 +115,9 @@ module top(
         .store_i(ID_EX.store_o),
         .funct3_i(ID_EX.funct3_o),
         .sdata_i(ID_EX.sdata_o),
+        // rva
+        .rva_valid_i(ID_EX.rva_valid_o),
+        .funct5_i(ID_EX.funct5_o),
         // exception
         .exception_i(ID_EX.exception_o),
         .mcause_i(ID_EX.mcause_o),
@@ -137,6 +143,9 @@ module top(
         .csr_wen_i(EX.csr_wen_o),
         .csr_addr_i(EX.csr_addr_o),
         .csr_wdata_i(EX.csr_wdata_o),
+        // rva
+        .rva_valid_i(EX.rva_valid_o),
+        .funct5_i(EX.funct5_o),
         // exception
         .exception_i(EX.exception_o),
         .mcause_i(EX.mcause_o),
@@ -162,6 +171,9 @@ module top(
         .csr_wen_i(EX_MEM.csr_wen_o),
         .csr_addr_i(EX_MEM.csr_addr_o),
         .csr_wdata_i(EX_MEM.csr_wdata_o),
+        // rva
+        .rva_valid_i(EX_MEM.rva_valid_o),
+        .funct5_i(EX_MEM.funct5_o),
         // exception
         .exception_i(EX_MEM.exception_o),
         .mcause_i(EX_MEM.mcause_o),

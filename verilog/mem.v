@@ -9,8 +9,8 @@ module mem(
     input           store_i,
     input           load_i,
     input   [63:0]  sdata_i,
-    input   [2:0]   funct3_i,
-    input   [63:0]  aluout_i,     // load/store address, or data to regfile
+    input   [2:0]   funct3_i,       // load/store's sign and width
+    input   [63:0]  aluout_i,       // load/store address, or data to regfile
     // write regfile
     input           wen_i,
     input   [4:0]   rd_i,
@@ -18,10 +18,16 @@ module mem(
     input           csr_wen_i,
     input   [11:0]  csr_addr_i,
     input   [63:0]  csr_wdata_i,
+    // rva
+    input           rva_valid_i,
+    input   [4:0]   funct5_i,
     // exception
     input           exception_i,
     input   [63:0]  mcause_i,
     input   [63:0]  pc_i,
+    // mmu
+    //input   [63:0]  vm_i,
+    //input   [63:0]  satp_i,
 
     // write regfile
     output          wen_o,
@@ -39,23 +45,47 @@ module mem(
     // ifetch
     output  [31:0]  inst_o
 );
+    wire [63:0] start = aluout_i - `PMEM_START;
+    reg  [63:0] load_data;
+    wire [1:0] width = funct3_i[1:0];
+    wire load_unsigned = funct3_i[2];
+    reg [7:0] mem [0:((1<<20)-1)];  // size = 2^20 = 1MB
+
+    reg [63:0] rvc_sdata;
+    always @(*) begin
+        rvc_sdata = 0;
+        case (funct5_i)
+            `FCT5_AMOADD:   rvc_sdata = load_data + sdata_i;
+            `FCT5_AMOAND:   rvc_sdata = load_data & sdata_i;
+            `FCT5_AMOOR:    rvc_sdata = load_data | sdata_i;
+            `FCT5_AMOXOR:   rvc_sdata = load_data ^ sdata_i;
+            default:        rvc_sdata = sdata_i;
+        endcase
+    end
+    wire [63:0] sdata = (rva_valid_i)? rvc_sdata: sdata_i;
+
     /*  ifetch  */
     wire [63:0] pc_off;
     assign pc_off = if_pc_i - `PMEM_START;
-    // size = 2^20 = 1MB
-    reg [7:0] mem [0:((1<<20)-1)];
+    assign inst_o = {mem[pc_off+3], mem[pc_off+2], mem[pc_off+1], mem[pc_off]};
+    /*  end ifetch  */
+
+    // rva
+    reg [63:0] lr_addr;
+    wire lr_valid = rva_valid_i & (funct5_i == `FCT5_LR);
+    wire sc_valid = rva_valid_i & (funct5_i == `FCT5_SC);
+    wire sc_success = sc_valid & (lr_addr == aluout_i);
 
     initial begin
         $readmemh("/home/s081/Downloads/projects/cpu/img", mem);
         set_mem_ptr(mem);
     end
 
-    assign inst_o = {mem[pc_off+3], mem[pc_off+2], mem[pc_off+1], mem[pc_off]};
-    /*  end ifetch  */
-    reg [63:0] load_data;
-    wire [1:0] width = funct3_i[1:0];
-    wire load_unsigned = funct3_i[2];
-    wire [63:0] start = aluout_i - `PMEM_START;
+    always @(posedge clock) begin
+        if (lr_valid)
+            lr_addr <= aluout_i;
+    end
+
     /*  load */
     always @(*) begin
         load_data = 64'd0;
@@ -76,19 +106,22 @@ module mem(
 
     always @(posedge clock) begin
         if (store_i)    begin
-            case (width)
-                2'd0:   mem[start] <= sdata_i[7:0];
-                2'd1:   {mem[start+1], mem[start]} <= sdata_i[15:0];
-                2'd2:   {mem[start+3], mem[start+2], mem[start+1], mem[start]} <= sdata_i[31:0];
-                2'd3:   {mem[start+7], mem[start+6], mem[start+5], mem[start+4], mem[start+3], mem[start+2], mem[start+1], mem[start]} <= sdata_i;
-            endcase
-            //$display("(%x) %x => Mem[%x]", pc_i, sdata_i, aluout_i);
+            if (!sc_valid | sc_success)   begin
+                case (width)
+                    2'd0:   mem[start] <= sdata[7:0];
+                    2'd1:   {mem[start+1], mem[start]} <= sdata[15:0];
+                    2'd2:   {mem[start+3], mem[start+2], mem[start+1], mem[start]} <= sdata[31:0];
+                    2'd3:   {mem[start+7], mem[start+6], mem[start+5], mem[start+4], mem[start+3], mem[start+2], mem[start+1], mem[start]} <= sdata;
+                endcase
+            end
+            //$display("(%x) %x => Mem[%x]", pc_i, sdata, aluout_i);
         end
     end
 
     assign wen_o = wen_i;
     assign rd_o = rd_i;
-    assign wdata_o = load_i? load_data: aluout_i;
+    assign wdata_o = (sc_valid)? ((sc_success)? 0: 64'h114514):
+        (load_i)? load_data: aluout_i;
 
     assign exception_o = exception_i;
     assign mcause_o = mcause_i;

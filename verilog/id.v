@@ -25,7 +25,8 @@ module id(
     // read csr
     input [63:0]    csrVal_i,
     // read after load hazard
-    input           prev_is_load_i,
+    // that prev inst's data will be ready in stage MEM
+    input           prev_is_load_or_rva_i,
     // to set jalr's link address
     input           is_compressed_i,
     // read regfile
@@ -52,6 +53,9 @@ module id(
     // write csr
     output reg          csr_wen_o,
     output reg [63:0]   csr_wdata_o,
+    // rva
+    output reg [4:0]    funct5_o,
+    output reg          rva_valid_o,
     // control
     output reg          branch_flush_o,
     output reg          load_use_o,
@@ -60,8 +64,8 @@ module id(
     output reg [63:0]   mcause_o,
     output reg          exception_o
 );
-    task error(input [63:0] pc);
-        $display("unsupported instruction at pc = %x", pc);
+    task error();
+        $display("unsupported instruction at pc = %x. inst = %x", pc_i, inst);
         $finish();
     endtask
 
@@ -74,8 +78,10 @@ module id(
 
     wire [6:0]  opcode = inst[6:0];
     wire [6:0]  funct7 = inst[31:25];
-    wire [4:0]  rs1 = inst[19:15], rs2 = inst[24:20], rd = inst[11:7];
+    wire [4:0]  funct5 = inst[31:27];   // rvc
+    wire aq = inst[26], rl = inst[25];  // dont care?
     wire [2:0]  funct3 = inst[14:12];
+    wire [4:0]  rs1 = inst[19:15], rs2 = inst[24:20], rd = inst[11:7];
     wire [63:0] immI = `SEXT(inst[31:20], 12, 64);
     wire [63:0] immJ = `SEXT({inst[31], inst[19:12], inst[20], inst[30:21], 1'b0}, 21, 64);    // shift left by 1, making immJ always a multiple of 2
     wire [63:0] immU = `SEXT({inst[31:12], 12'b0}, 32, 64);
@@ -100,21 +106,21 @@ module id(
                         csrVal_i;
     assign pc_o = pc_i;
     assign branch_flush_o = branch_o & ~load_use_o;
-    assign load_use_o = prev_is_load_i & ((rf_ex_rd_i == rs1_o) | (rf_ex_rd_i == rs2_o));
+    assign load_use_o = prev_is_load_or_rva_i & ((rf_ex_rd_i == rs1_o) | (rf_ex_rd_i == rs2_o));
     // decode
     always @* begin
         // default values
         // alu
-        srcA_o = 0;
-        srcB_o = 0;
+        srcA_o = 64'b0;
+        srcB_o = 64'b0;
         aluop_o = `ALU_ADD;
         // write regfile
-        rf_wen_o = 0;
+        rf_wen_o = 1'b0;
         rd_o = 5'b0;
         // write csr
-        csr_wen_o = 0;
-        csr_wdata_o = 0;
-        csr_addr_o = 0;
+        csr_wen_o = 1'b0;
+        csr_wdata_o = 64'b0;
+        csr_addr_o = 64'b0;
         // mem
         load_o = 1'b0;
         store_o = 1'b0;
@@ -125,6 +131,9 @@ module id(
         branch_target_o = 64'b0;
         rs1_o = rs1;
         rs2_o = rs2;
+        // rva
+        rva_valid_o = 1'b0;
+        funct5_o = funct5;
         // exception
         exception_o = 1'b0;
         mcause_o = 64'b0;
@@ -145,7 +154,7 @@ module id(
                     `FCT3_ORI:  aluop_o = `ALU_OR;
                     `FCT3_SLLI: aluop_o = `ALU_SLL;
                     `FCT3_SRLI_SRAI:    aluop_o = funct7[5]? `ALU_SRA: `ALU_SRL;
-                    default:    error(pc_i);
+                    default:    error();
                 endcase
             end // arith-i
 
@@ -166,7 +175,7 @@ module id(
                             `FCT3_SRL:  aluop_o = `ALU_SRL;
                             `FCT3_OR:   aluop_o = `ALU_OR;
                             `FCT3_AND:  aluop_o = `ALU_AND;
-                            default:    error(pc_i);
+                            default:    error();
                         endcase
                     end
 
@@ -185,7 +194,7 @@ module id(
                             `FCT3_MULH: aluop_o = `ALU_MULH;
                             // high, signed rs, unsigned rs2
                             `FCT3_MULHSU:aluop_o = `ALU_MULHSU;
-                            default:    error(pc_i);
+                            default:    error();
                         endcase
                     end
 
@@ -193,10 +202,10 @@ module id(
                         case (funct3)
                             `FCT3_SUB:  aluop_o = `ALU_SUB;
                             `FCT3_SRA:  aluop_o = `ALU_SRA;
-                            default:    error(pc_i);
+                            default:    error();
                         endcase
                     end
-                    default:    error(pc_i);
+                    default:    error();
                 endcase // funct7
             end // arith-r
 
@@ -211,7 +220,7 @@ module id(
                     `FCT3_SLLIW:    aluop_o = `ALU_SLLW;
                     `FCT3_SRLIW_SRAIW:
                         aluop_o = funct7[5]? `ALU_SRAW: `ALU_SRLW;
-                    default:    error(pc_i);
+                    default:    error();
                 endcase
             end // rv64i arith-i
 
@@ -227,7 +236,7 @@ module id(
                             `FCT3_ADDW: aluop_o = `ALU_ADDW;
                             `FCT3_SLLW: aluop_o = `ALU_SLLW;
                             `FCT3_SRLW: aluop_o = `ALU_SRLW;
-                            default:    error(pc_i);
+                            default:    error();
                         endcase
                     end
                     7'h01:  begin   // rv64m
@@ -237,17 +246,17 @@ module id(
                             `FCT3_DIVUW:aluop_o = `ALU_DIVUW;
                             `FCT3_REMW: aluop_o = `ALU_REMW;
                             `FCT3_REMUW:aluop_o = `ALU_REMUW;
-                            default:    error(pc_i);
+                            default:    error();
                         endcase
                     end
                     7'h20:  begin
                         case (funct3)
                             `FCT3_SUBW: aluop_o = `ALU_SUBW;
                             `FCT3_SRAW: aluop_o = `ALU_SRAW;
-                            default:    error(pc_i);
+                            default:    error();
                         endcase
                     end
-                    default:    error(pc_i);
+                    default:    error();
                 endcase
             end // rv64i arith-r
             `OPCODE_LOAD:   begin
@@ -279,7 +288,7 @@ module id(
                     `FCT3_BGEU: branch_o = rs1val >= rs2val;
                     `FCT3_BLT:  branch_o = $signed(rs1val) <  $signed(rs2val);
                     `FCT3_BGE:  branch_o = $signed(rs1val) >= $signed(rs2val);
-                    default:    error(pc_i);
+                    default:    error();
                 endcase
             end
 
@@ -319,6 +328,24 @@ module id(
                 srcB_o = 64'b0;
             end
 
+            `OPCODE_AMO:    begin
+                // all need to access amemory & write regfile
+                rva_valid_o = 1'b1;
+                load_o = (funct5 != `FCT5_SC);
+                store_o = (funct5 != `FCT5_LR);
+                rf_wen_o = 1'b1;
+                rd_o = rd;
+                srcA_o = rs1val;    // addr
+                case (funct5)
+                    // min/max: these sdata will be dealt in ID
+                    `FCT5_AMOMAX:   sdata_o = MAX(rs1val, rs2val);
+                    `FCT5_AMOMAXU:  sdata_o = MAXU(rs1val, rs2val);
+                    `FCT5_AMOMIN:   sdata_o = MIN(rs1val, rs2val);
+                    `FCT5_AMOMINU:  sdata_o = MINU(rs1val, rs2val);
+                    default:        sdata_o = rs2val;   // need some further process in MEM
+                endcase
+            end
+
             `OPCODE_SYS:    begin
                 if (funct3 != `FCT3_TRAP)   begin
                     // write regfile: x[rd] = CSRs[csr]
@@ -343,7 +370,7 @@ module id(
                             `IMM_URET:;
                             `IMM_ECALL:;
                             `IMM_WFI:;
-                            default:    error(pc_i);
+                            default:    error();
                         endcase
                     end
                     // these csr-insts will write both refgile & csr
@@ -357,7 +384,8 @@ module id(
                 endcase
             end
 
-            default:    error(pc_i);
+            `OPCODE_FENCE:; //??
+            default:    error();
         endcase // opcode
     end
 
