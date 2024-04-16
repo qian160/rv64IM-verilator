@@ -38,8 +38,13 @@ module wb(
     assign exception_o = exception_i;
     assign mcause_o = mcause_i;
 
+    wire riscv_tests_en = 1'b1;
+    wire simFinish = exception_i & 
+        ((~riscv_tests_enmcause_i & (mcause_i == `BREAKPOINT)) |
+        (riscv_tests_en & (mcause_i == `ECALL_FROM_M)));
+
     always @* begin
-        if(exception_i & (mcause_i == `BREAKPOINT))   begin
+        if(simFinish)   begin
             if(a0_i != 64'h0)
                 $display("\n\n hit \033[1;31mbad\033[0m trap at pc = %x", pc_i);
             else

@@ -16,9 +16,9 @@ module ifetch (
     // exception
     input           exception_i,    // from wb
     input           mret_i,         // from id
-    input  [63:0]   mtvec_i,        // from csr (RAW?)
-    input  [63:0]   mepc_i,         // from csr
-    input  [63:0]   mcause_i,       // from csr
+    input  [63:0]   mtvec_i,        // from id
+    input  [63:0]   mepc_i,         // from id
+    input  [63:0]   mcause_i,       // from id
     // used by id's jalr
     output          is_compressed_o,
     // fetch

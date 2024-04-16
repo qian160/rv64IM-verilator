@@ -66,7 +66,7 @@ int main(int argc, char **argv)
 	init_sdb();
 //	cmd_c("-1");
 
-//	tb.trace("./wave.vcd");
+	tb.trace("./wave.vcd");
 
 	while(!Verilated::gotFinish()){
 		cout << "(0x" << top -> pc_o << ")";

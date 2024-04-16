@@ -20,10 +20,10 @@ module top(
         .branch_i(ID.branch_o),
         .branch_target_i(ID.branch_target_o),
         .exception_i(WB.exception_o),
-        .mtvec_i(CSR.mtvec_o),  // RAW?
+        .mtvec_i(ID.mtvec_o),
         .mcause_i(WB.mcause_o),
         .mret_i(ID.mret_o),
-        .mepc_i(CSR.mepc_o),
+        .mepc_i(ID.mepc_o),
         // control
         .stall_i(CONT.stall_o[0]),
         .flush_i(CONT.flush_o[0])
@@ -62,7 +62,10 @@ module top(
         .csr_wb_addr_i(WB.csr_addr_o),
         .csr_ex_wdata_i(EX.csr_wdata_o),
         .csr_mem_wdata_i(MEM.csr_wdata_o),
-        .csr_wb_wdata_i(WB.csr_wdata_o)
+        .csr_wb_wdata_i(WB.csr_wdata_o),
+        // special CSRs
+        .mepc_i(CSR.mepc_o),
+        .mtvec_i(CSR.mtvec_o)
     );
 
     id_ex ID_EX(
@@ -243,7 +246,8 @@ module top(
         .id_branch_flush_i(ID.branch_flush_o),
         .wb_exception_i(WB.exception_o),
         .ex_div_i(EX.div_not_ready_o),
-        .id_load_use_i(ID.load_use_o)
+        .id_load_use_i(ID.load_use_o),
+        .id_fence_i(ID.fence_o)
     );
 
 //    srt_tb st(.clock(clock));

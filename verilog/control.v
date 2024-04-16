@@ -7,6 +7,7 @@ module control(
     input   ex_div_i,           // stall & flush (EX/MEM)
     input   id_branch_flush_i,  // flush
     input   id_load_use_i,      // stall & flush (ID/EX, to avoid that inst to be execuated multiple times)
+    input   id_fence_i,         // stall multiple cycles(IF, IF/ID)
     input   wb_exception_i,     // flush all
     // to pipline registers
     output  reg [4:0]   stall_o,
@@ -14,6 +15,12 @@ module control(
     // statistics
     output  reg [63:0]  nr_insts_o
 );
+    // fence: stall 3 cycles
+    reg fence_1, fence_2;
+    always @(posedge clock) begin
+        fence_1 <= id_fence_i;
+        fence_2 <= fence_1;
+    end
     reg [63:0] nr_insts = 0;
     always @(posedge clock) begin
         if ((stall_o == 0) & (flush_o == 0))
@@ -25,6 +32,8 @@ module control(
         if (ex_div_i)
             stall_o = 5'b00111;     // IF IF/ID ID/EX
         else if (id_load_use_i)
+            stall_o = 5'b00011;     // IF IF/ID
+        else if (id_fence_i | fence_1 | fence_2)
             stall_o = 5'b00011;     // IF IF/ID
         else 
             stall_o = 5'b00000;

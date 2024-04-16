@@ -24,6 +24,9 @@ module id(
     input [63:0]    rs2val_i,
     // read csr
     input [63:0]    csrVal_i,
+    // special CSRs
+    input [63:0]    mtvec_i,
+    input [63:0]    mepc_i,
     // read after load hazard
     // that prev inst's data will be ready in stage MEM
     input           prev_is_load_or_rva_i,
@@ -59,6 +62,10 @@ module id(
     // control
     output reg          branch_flush_o,
     output reg          load_use_o,
+    output reg          fence_o,
+    // special CSRs
+    output reg [63:0]   mtvec_o,
+    output reg [63:0]   mepc_o,
     // exception
     output reg [63:0]   pc_o,
     output reg [63:0]   mcause_o,
@@ -66,7 +73,7 @@ module id(
 );
     task error();
         $display("unsupported instruction at pc = %x. inst = %x", pc_i, inst);
-        $finish();
+        //$finish();
     endtask
 
     wire [31:0] inst;
@@ -104,6 +111,16 @@ module id(
                         (csr_addr_o == csr_mem_addr_i)? csr_mem_wdata_i:
                         (csr_addr_o == csr_wb_addr_i)?  csr_wb_wdata_i:
                         csrVal_i;
+
+    assign mtvec_o = (csr_ex_addr_i == `MTVEC)?  csr_ex_wdata_i:
+                        (csr_mem_addr_i == `MTVEC)? csr_mem_wdata_i:
+                        (csr_wb_addr_i == `MTVEC)?  csr_wb_wdata_i:
+                        mtvec_i;
+    assign mepc_o = (csr_ex_addr_i == `MEPC)?  csr_ex_wdata_i:
+                        (csr_mem_addr_i == `MEPC)? csr_mem_wdata_i:
+                        (csr_wb_addr_i == `MEPC)?  csr_wb_wdata_i:
+                        mepc_i;
+
     assign pc_o = pc_i;
     assign branch_flush_o = branch_o & ~load_use_o;
     assign load_use_o = prev_is_load_or_rva_i & ((rf_ex_rd_i == rs1_o) | (rf_ex_rd_i == rs2_o));
@@ -138,6 +155,7 @@ module id(
         exception_o = 1'b0;
         mcause_o = 64'b0;
         mret_o = 1'b0;
+        fence_o = 1'b0;
         case (opcode)
             `OPCODE_ARITH_I:   begin   // I-type
                 // default values
@@ -365,10 +383,16 @@ module id(
                                 exception_o = 1'b1;
                                 mcause_o = `BREAKPOINT;
                             end
-                            `IMM_MRET:  mret_o = 1'b1;
+                            `IMM_MRET:  begin
+                                mret_o = 1'b1;  // pc = mepc
+                                //mcause_o = `MACHINE_SOFTWARE_INT; ?
+                            end
                             `IMM_SRET:;
                             `IMM_URET:;
-                            `IMM_ECALL:;
+                            `IMM_ECALL: begin           // pc = xtvec
+                                exception_o = 1'b1;
+                                mcause_o = `ECALL_FROM_M;
+                            end
                             `IMM_WFI:;
                             default:    error();
                         endcase
@@ -384,7 +408,7 @@ module id(
                 endcase
             end
 
-            `OPCODE_FENCE:; //??
+            `OPCODE_FENCE:  fence_o = 1'b1;     // insert some bubbles
             default:    error();
         endcase // opcode
     end
