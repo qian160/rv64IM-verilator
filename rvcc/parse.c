@@ -1272,13 +1272,12 @@ static Node *declaration(Token **Rest, Token *Tok, Type *BaseTy, VarAttr *Attr) 
 // compoundStmt = "{" ( typedef | stmt | declaration)* "}"
 static Node *compoundStmt(Token **Rest, Token *Tok) {
     // 这里使用了和词法分析类似的单向链表结构
-    char *end = equal(Tok, "{")? "}": equal(Tok, "<%")? "%>": NULL;
     Tok = skip(Tok, "{");
     Node Head = {};
     Node *Cur = &Head;
     enterScope();
     // (stmt | declaration)* "}"
-    while (!equal(Tok, end)) {
+    while (!equal(Tok, "}")) {
         if (isTypename(Tok) && !equal(Tok->Next, ":")) {
             VarAttr Attr = {};
             Type *BaseTy = declspec(&Tok, Tok, &Attr);

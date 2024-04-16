@@ -2485,9 +2485,9 @@ void emitText(Obj *Prog) {
         // 将sp写入fp
         println("  mv fp, sp");
 
-//        println("  # 保存所有的fs0~fs11寄存器");
-//        for (int I = 0; I <= 11; ++I)
-//            println("  fsgnj.d ft%d, fs%d, fs%d", I, I, I);
+        println("  # 保存所有的fs0~fs11寄存器");
+        for (int I = 0; I <= 11; ++I)
+            println("  fsgnj.d ft%d, fs%d, fs%d", I, I, I);
 
         // 偏移量为实际变量所用的栈大小
         if(isLegalImmI(Fn->StackSize))
@@ -2630,9 +2630,9 @@ void emitText(Obj *Prog) {
         println("# =====%s段结束===============", Fn->Name);
         println(".L.return.%s:", Fn->Name);
 
-//        println("  # 恢复所有的fs0~fs11寄存器");
-//        for (int I = 0; I <= 11; ++I)
-//            println("  fsgnj.d fs%d, ft%d, ft%d", I, I, I);
+        println("  # 恢复所有的fs0~fs11寄存器");
+        for (int I = 0; I <= 11; ++I)
+            println("  fsgnj.d fs%d, ft%d, ft%d", I, I, I);
 
         // 将fp的值改写回sp
         println("  mv sp, fp");
