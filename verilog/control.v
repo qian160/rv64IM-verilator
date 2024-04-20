@@ -16,10 +16,11 @@ module control(
     output  reg [63:0]  nr_insts_o
 );
     // fence: stall 3 cycles
-    reg fence_1, fence_2;
+    reg [2:0] cnt;
     always @(posedge clock) begin
-        fence_1 <= id_fence_i;
-        fence_2 <= fence_1;
+        cnt <= 3'd3;
+        if(id_fence_i)
+            cnt <= cnt - 3'd1;
     end
     reg [63:0] nr_insts = 0;
     always @(posedge clock) begin
@@ -33,7 +34,7 @@ module control(
             stall_o = 5'b00111;     // IF IF/ID ID/EX
         else if (id_load_use_i)
             stall_o = 5'b00011;     // IF IF/ID
-        else if (id_fence_i | fence_1 | fence_2)
+        else if (id_fence_i & (cnt != 0))
             stall_o = 5'b00011;     // IF IF/ID
         else 
             stall_o = 5'b00000;

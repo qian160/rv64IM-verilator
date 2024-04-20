@@ -1,6 +1,7 @@
 #include"include/sdb.h"
 #include"include/macro.h"
 #include"include/testbench.h"
+#include"include/CSR.h"
 
 using namespace std;
 
@@ -15,7 +16,11 @@ CPU_state state;
 Statistics statistics;
 
 extern "C" void set_gpr_ptr(const svOpenArrayHandle r) {
-	state.cpu_gpr = (uint64_t*)(((VerilatedDpiOpenVar*)r)->datap());
+	state.gpr_ptr = (uint64_t*)(((VerilatedDpiOpenVar*)r)->datap());
+}
+
+extern "C" void set_csr_ptr(const svOpenArrayHandle r) {
+	state.csr_ptr = (uint64_t*)(((VerilatedDpiOpenVar*)r)->datap());
 }
 
 extern "C" void set_mem_ptr(const svOpenArrayHandle r) {
@@ -35,8 +40,27 @@ bool in_pmem(uint64_t addr) {
 
 void dump_gpr() {
 	for (int i = 0; i < 32; i++) {
-        printf("[%3s] = 0x%-16lx%c", regs[i], state.cpu_gpr[i], i & 0b1? '\n' : '\t');
+        printf("[%3s] = 0x%-16lx%c", regs[i], state.gpr_ptr[i], i & 0b1? '\n' : '\t');
 	}
+}
+
+void dump_csr() {
+    cout << "mstatus    0x" << state.csr_ptr[MSTATUS] << endl;
+    cout << "mip        0x" << state.csr_ptr[MIP] << endl;
+    cout << "mie        0x" << state.csr_ptr[MIE] << endl;
+    cout << "mideleg    0x" << state.csr_ptr[MIDELEG] << endl;
+    cout << "medeleg    0x" << state.csr_ptr[MEDELEG] << endl;
+    cout << "mtvec      0x" << state.csr_ptr[MTVEC] << endl;
+    cout << "stvec      0x" << state.csr_ptr[STVEC] << endl;
+    cout << "mepc       0x" << state.csr_ptr[MEPC] << endl;
+    cout << "sepc       0x" << state.csr_ptr[SEPC] << endl;
+    cout << "mcause     0x" << state.csr_ptr[MCAUSE] << endl;
+    cout << "scause     0x" << state.csr_ptr[SCAUSE] << endl;
+    cout << "mtval      0x" << state.csr_ptr[MTVAL] << endl;
+    cout << "stval      0x" << state.csr_ptr[STVAL] << endl;
+    cout << "mscratch   0x" << state.csr_ptr[MSCRATCH] << endl;
+    cout << "sscratch   0x" << state.csr_ptr[SSCRATCH] << endl;
+    cout << "satp       0x" << state.csr_ptr[SATP] << endl;
 }
 
 bool breakpoint_exists(uint64_t addr) {
@@ -79,7 +103,7 @@ int cmd_q (string arg) {
 }
 
 int cmd_i(string arg) {
-    // todo
+    dump_csr();
     dump_gpr();
     return 0;
 }

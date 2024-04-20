@@ -6,8 +6,10 @@ module RVCExpander(
     output reg  [31:0] inst_o
 );
     task error(input [63:0] pc);
-        $display("unsupported instruction at pc = %x", pc);
-        $finish();
+        if (pc != 0)    begin
+            $display("unsupported instruction at pc = %x", pc);
+            $finish();
+        end
     endtask
 
     // consts

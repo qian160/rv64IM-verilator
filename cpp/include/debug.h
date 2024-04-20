@@ -1,13 +1,13 @@
 #include<string>
 
-#define _red_ 	    ("\033[1;31m")
-#define _green_ 	("\033[1;32m")
-#define _yellow_    ("\033[1;33m")
-#define _blue_      ("\033[1;34m")
-#define _magenta_   ("\033[1;35m")
-#define _cyan_ 	    ("\033[1;36m")
-#define _white_ 	("\033[1;37m")
-#define _pink_ 	    ("\033[1;38m")
+#define _red_ 	    string("\033[1;31m")
+#define _green_ 	string("\033[1;32m")
+#define _yellow_    string("\033[1;33m")
+#define _blue_      string("\033[1;34m")
+#define _magenta_   string("\033[1;35m")
+#define _cyan_ 	    string("\033[1;36m")
+#define _white_ 	string("\033[1;37m")
+#define _pink_ 	    string("\033[1;38m")
 
 #define normal "\033[0m"
 

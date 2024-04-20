@@ -13,7 +13,7 @@ module wb(
     // exception
     input           exception_i,    // to csr and ifetch
     input   [63:0]  pc_i,
-    input   [63:0]  mcause_i,
+    input   [63:0]  cause_i,
     input   [63:0]  a0_i,           // from regfile
     // write regfile
     output  wen_o,
@@ -25,7 +25,7 @@ module wb(
     output  [63:0]  csr_wdata_o,
     // exception
     output          exception_o,
-    output  [63:0]  mcause_o
+    output  [63:0]  cause_o
 );
     assign rd_o = rd_i;
     assign wen_o = wen_i;
@@ -36,12 +36,10 @@ module wb(
     assign csr_wdata_o = csr_wdata_i;
 
     assign exception_o = exception_i;
-    assign mcause_o = mcause_i;
+    assign cause_o = cause_i;
 
-    wire riscv_tests_en = 1'b1;
     wire simFinish = exception_i & 
-        ((~riscv_tests_enmcause_i & (mcause_i == `BREAKPOINT)) |
-        (riscv_tests_en & (mcause_i == `ECALL_FROM_M)));
+        ((cause_i == `BREAKPOINT) | (cause_i == `ECALL_FROM_M) | (cause_i == `ECALL_FROM_S) | (cause_i == `ECALL_FROM_U));
 
     always @* begin
         if(simFinish)   begin

@@ -17,5 +17,7 @@ int main() {
   for(i = 0; i < N; i ++)
     check(a[i] == i);
 
+  check(0x8000000000000000 / 0xffffffffffffffff == 0x8000000000000000);
+  check(1 / 0 == -1);
   return 0;
 }

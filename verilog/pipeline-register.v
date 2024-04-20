@@ -55,7 +55,7 @@ module id_ex (
     /// exception
     input           exception_i,
     input [63:0]    pc_i,
-    input [63:0]    mcause_i,
+    input [63:0]    cause_i,
     // alu input
     output reg [63:0]   srcA_o,
     output reg [63:0]   srcB_o,
@@ -77,7 +77,7 @@ module id_ex (
     output reg [4:0]    funct5_o,
     // exception
     output reg          exception_o,
-    output reg [63:0]   mcause_o,
+    output reg [63:0]   cause_o,
     output reg [63:0]   pc_o
 );
     always @(posedge clock) begin
@@ -96,7 +96,7 @@ module id_ex (
             csr_wen_o <= 0;
             csr_addr_o <= 0;
             csr_wdata_o <= 0;
-            mcause_o <= 0;
+            cause_o <= 0;
             rva_valid_o <= 0;
             funct5_o <= 0;
         end
@@ -116,7 +116,7 @@ module id_ex (
             csr_wen_o <= csr_wen_i;
             csr_addr_o <= csr_addr_i;
             csr_wdata_o <= csr_wdata_i;
-            mcause_o <= mcause_i;
+            cause_o <= cause_i;
             rva_valid_o <= rva_valid_i;
             funct5_o <= funct5_i;
         end
@@ -146,7 +146,7 @@ module ex_mem (
     input   [4:0]   funct5_i,
     // exception
     input           exception_i,
-    input   [63:0]  mcause_i,
+    input   [63:0]  cause_i,
     input   [63:0]  pc_i,
     // mem
     output reg          store_o,
@@ -166,7 +166,7 @@ module ex_mem (
     output reg  [4:0]   funct5_o,
     // exception
     output reg          exception_o,
-    output reg  [63:0]  mcause_o,
+    output reg  [63:0]  cause_o,
     output reg  [63:0]  pc_o
 );
     always @(posedge clock) begin
@@ -183,7 +183,7 @@ module ex_mem (
             csr_wen_o <= 0;
             csr_addr_o <= 0;
             csr_wdata_o <= 0;
-            mcause_o <= 0;
+            cause_o <= 0;
             rva_valid_o <= 0;
             funct5_o <= 0;
         end
@@ -201,7 +201,7 @@ module ex_mem (
             csr_wen_o <= csr_wen_i;
             csr_addr_o <= csr_addr_i;
             csr_wdata_o <= csr_wdata_i;
-            mcause_o <= mcause_i;
+            cause_o <= cause_i;
             rva_valid_o <= rva_valid_i;
             funct5_o <= funct5_i;
         end
@@ -221,7 +221,7 @@ module mem_wb (
     input   [63:0]  csr_wdata_i,
     // exception
     input           exception_i,
-    input   [63:0]  mcause_i,
+    input   [63:0]  cause_i,
     input   [63:0]  pc_i,
 
     // write regfile
@@ -234,7 +234,7 @@ module mem_wb (
     output reg  [63:0]  csr_wdata_o,
     // exception
     output reg          exception_o,
-    output reg  [63:0]  mcause_o,
+    output reg  [63:0]  cause_o,
     output reg  [63:0]  pc_o
 );
     always @(posedge clock ) begin
@@ -247,7 +247,7 @@ module mem_wb (
             csr_wen_o <= 0;
             csr_addr_o <= 0;
             csr_wdata_o <= 0;
-            mcause_o <= 0;
+            cause_o <= 0;
         end
 
         else    begin
@@ -259,7 +259,7 @@ module mem_wb (
             csr_wen_o <= csr_wen_i;
             csr_addr_o <= csr_addr_i;
             csr_wdata_o <= csr_wdata_i;
-            mcause_o <= mcause_i;
+            cause_o <= cause_i;
         end
     end
 endmodule

@@ -5,7 +5,7 @@
 using namespace std;
 
 typedef struct{
-    uint64_t *cpu_gpr;
+    uint64_t *gpr_ptr;
     uint8_t  *mem_ptr;
     uint64_t *csr_ptr;
     vector<uint64_t> breakpoints;

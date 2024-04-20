@@ -48,7 +48,7 @@ void my_exit(int sig)
 	sprintf(buf, "finished in %lf ms\n#cycles = %ld, #insts = %ld, ipc = %lf", seconds * 1000, nr_cycles, nr_insts, ipc);
 	cout << buf << endl;
 	cout << "simulation frequency = " << statistics.nr_cycles / seconds << " hz" << endl;
-	exit(state.cpu_gpr[10]);	// x10 = a0
+	exit(state.gpr_ptr[10]);	// x10 = a0
 }
 
 int main(int argc, char **argv) 
@@ -64,9 +64,10 @@ int main(int argc, char **argv)
 	load(argv[1]);
 	tb.reset();
 	init_sdb();
-//	cmd_c("-1");
-
 	tb.trace("./wave.vcd");
+
+	if (argc > 2)
+		cmd_c("-1");
 
 	while(!Verilated::gotFinish()){
 		cout << "(0x" << top -> pc_o << ")";

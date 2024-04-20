@@ -28,7 +28,7 @@ gcc.%: %.c $(LINKAGE)
 	@make -s -f scripts/Makefile NAME=$* build_gcc
 	$(call print_yellow,====loading img $*...===)
 	$(call print_green,====start simulating...===)
-	@../obj_dir/Vtop gcc-$*.bin \
+	@../obj_dir/Vtop gcc-$*.bin  test_all\
 		&& printf "[%18s] $(COLOR_GREEN)PASS!$(COLOR_NONE)\n" gcc-$* >> $(RESULT)\
 		|| printf "[%18s] $(COLOR_RED)FAIL!$(COLOR_NONE)\n" gcc-$* >> $(RESULT)
 

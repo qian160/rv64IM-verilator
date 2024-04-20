@@ -23,7 +23,7 @@ module mem(
     input   [4:0]   funct5_i,
     // exception
     input           exception_i,
-    input   [63:0]  mcause_i,
+    input   [63:0]  cause_i,
     input   [63:0]  pc_i,
     // mmu
     //input   [63:0]  vm_i,
@@ -40,16 +40,28 @@ module mem(
     // exception
     output  [63:0]  pc_o,
     output          exception_o,
-    output  [63:0]  mcause_o,
+    output  [63:0]  cause_o,
 
     // ifetch
     output  [31:0]  inst_o
 );
+    localparam KERNELBASE = 64'h80000000, PHYSTOP = 64'h86400000;
+    function in_pmem;
+        in_pmem = (aluout_i >= KERNELBASE) & (aluout_i < PHYSTOP);
+    endfunction
+
+    always @(*) begin
+        if((load_i | store_i) & !in_pmem()) begin
+            $display("bad address: %x at pc = %x\n", aluout_i, pc_i);
+            $finish();
+        end
+    end
+
     wire [63:0] start = aluout_i - `PMEM_START;
     reg  [63:0] load_data;
     wire [1:0] width = funct3_i[1:0];
     wire load_unsigned = funct3_i[2];
-    reg [7:0] mem [0:((1<<20)-1)];  // size = 2^20 = 1MB
+    reg [7:0] mem [0:((1<<24)-1)];  // size = 2^24 = 16MB
 
     reg [63:0] rvc_sdata;
     always @(*) begin
@@ -124,7 +136,7 @@ module mem(
         (load_i)? load_data: aluout_i;
 
     assign exception_o = exception_i;
-    assign mcause_o = mcause_i;
+    assign cause_o = cause_i;
     assign pc_o = pc_i;
 
     assign csr_addr_o = csr_addr_i;

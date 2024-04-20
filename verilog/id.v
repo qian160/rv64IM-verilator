@@ -23,10 +23,13 @@ module id(
     input [63:0]    rs1val_i,
     input [63:0]    rs2val_i,
     // read csr
+    input [1:0]     priv_i,
     input [63:0]    csrVal_i,
     // special CSRs
     input [63:0]    mtvec_i,
     input [63:0]    mepc_i,
+    input [63:0]    sepc_i,
+    input [63:0]    uepc_i,
     // read after load hazard
     // that prev inst's data will be ready in stage MEM
     input           prev_is_load_or_rva_i,
@@ -51,7 +54,6 @@ module id(
     output reg [63:0]   sdata_o,    // store data
     // to ifetch
     output reg          branch_o,
-    output reg          mret_o,
     output reg [63:0]   branch_target_o,
     // write csr
     output reg          csr_wen_o,
@@ -63,37 +65,29 @@ module id(
     output reg          branch_flush_o,
     output reg          load_use_o,
     output reg          fence_o,
-    // special CSRs
-    output reg [63:0]   mtvec_o,
-    output reg [63:0]   mepc_o,
     // exception
-    output reg [63:0]   pc_o,
-    output reg [63:0]   mcause_o,
+    output reg [63:0]   pc_o,       // debug & write xepc
+    output reg [63:0]   cause_o,
     output reg          exception_o
 );
     task error();
-        $display("unsupported instruction at pc = %x. inst = %x", pc_i, inst);
-        //$finish();
+        if (pc_i != 0)    begin
+            $display("unsupported instruction at pc = %x. inst = %x", pc_i, inst_i);
+            $finish();
+        end
     endtask
 
-    wire [31:0] inst;
-    RVCExpander e(
-        .pc_i(pc_i),
-        .inst_i(inst_i),
-        .inst_o(inst)
-    );
-
-    wire [6:0]  opcode = inst[6:0];
-    wire [6:0]  funct7 = inst[31:25];
-    wire [4:0]  funct5 = inst[31:27];   // rvc
-    wire aq = inst[26], rl = inst[25];  // dont care?
-    wire [2:0]  funct3 = inst[14:12];
-    wire [4:0]  rs1 = inst[19:15], rs2 = inst[24:20], rd = inst[11:7];
-    wire [63:0] immI = `SEXT(inst[31:20], 12, 64);
-    wire [63:0] immJ = `SEXT({inst[31], inst[19:12], inst[20], inst[30:21], 1'b0}, 21, 64);    // shift left by 1, making immJ always a multiple of 2
-    wire [63:0] immU = `SEXT({inst[31:12], 12'b0}, 32, 64);
-    wire [63:0] immS = `SEXT({inst[31:25], inst[11:7]}, 12, 64);
-    wire [63:0] immB = `SEXT({inst[31], inst[7], inst[30:25], inst[11:8], 1'b0}, 13, 64);      // shift left by 1
+    wire [6:0]  opcode = inst_i[6:0];
+    wire [6:0]  funct7 = inst_i[31:25];
+    wire [4:0]  funct5 = inst_i[31:27];   // rvc
+    wire aq = inst_i[26], rl = inst_i[25];  // dont care?
+    wire [2:0]  funct3 = inst_i[14:12];
+    wire [4:0]  rs1 = inst_i[19:15], rs2 = inst_i[24:20], rd = inst_i[11:7];
+    wire [63:0] immI = `SEXT(inst_i[31:20], 12, 64);
+    wire [63:0] immJ = `SEXT({inst_i[31], inst_i[19:12], inst_i[20], inst_i[30:21], 1'b0}, 21, 64);    // shift left by 1, making immJ always a multiple of 2
+    wire [63:0] immU = `SEXT({inst_i[31:12], 12'b0}, 32, 64);
+    wire [63:0] immS = `SEXT({inst_i[31:25], inst_i[11:7]}, 12, 64);
+    wire [63:0] immB = `SEXT({inst_i[31], inst_i[7], inst_i[30:25], inst_i[11:8], 1'b0}, 13, 64);      // shift left by 1
 
     wire [63:0] rs1val = (rs1_o == 5'd0)? 0 :
                         (rs1_o == rf_ex_rd_i) ? rf_ex_wdata_i :
@@ -111,15 +105,6 @@ module id(
                         (csr_addr_o == csr_mem_addr_i)? csr_mem_wdata_i:
                         (csr_addr_o == csr_wb_addr_i)?  csr_wb_wdata_i:
                         csrVal_i;
-
-    assign mtvec_o = (csr_ex_addr_i == `MTVEC)?  csr_ex_wdata_i:
-                        (csr_mem_addr_i == `MTVEC)? csr_mem_wdata_i:
-                        (csr_wb_addr_i == `MTVEC)?  csr_wb_wdata_i:
-                        mtvec_i;
-    assign mepc_o = (csr_ex_addr_i == `MEPC)?  csr_ex_wdata_i:
-                        (csr_mem_addr_i == `MEPC)? csr_mem_wdata_i:
-                        (csr_wb_addr_i == `MEPC)?  csr_wb_wdata_i:
-                        mepc_i;
 
     assign pc_o = pc_i;
     assign branch_flush_o = branch_o & ~load_use_o;
@@ -153,8 +138,7 @@ module id(
         funct5_o = funct5;
         // exception
         exception_o = 1'b0;
-        mcause_o = 64'b0;
-        mret_o = 1'b0;
+        cause_o = 64'b0;
         fence_o = 1'b0;
         case (opcode)
             `OPCODE_ARITH_I:   begin   // I-type
@@ -374,24 +358,33 @@ module id(
                     aluop_o = `ALU_ADD;
                     // write csr
                     csr_wen_o = 1;
-                    csr_addr_o = inst[31:20];
+                    csr_addr_o = (funct3 == `FCT3_TRAP)? 0: inst_i[31:20];
                 end
                 case (funct3)
                     `FCT3_TRAP: begin
-                        case (inst[31:20])
+                        case (inst_i[31:20])
                             `IMM_EBREAK:    begin
                                 exception_o = 1'b1;
-                                mcause_o = `BREAKPOINT;
+                                cause_o = `BREAKPOINT;
                             end
                             `IMM_MRET:  begin
-                                mret_o = 1'b1;  // pc = mepc
-                                //mcause_o = `MACHINE_SOFTWARE_INT; ?
+                                exception_o = 1'b1;
+                                cause_o = `MRET;
                             end
-                            `IMM_SRET:;
-                            `IMM_URET:;
+                            `IMM_SRET:  begin
+                                exception_o = 1'b1;
+                                cause_o = `SRET;
+                            end
+                            `IMM_URET:  begin
+                                exception_o = 1'b1;
+                                cause_o = `URET;
+                            end
                             `IMM_ECALL: begin           // pc = xtvec
                                 exception_o = 1'b1;
-                                mcause_o = `ECALL_FROM_M;
+                                cause_o = (priv_i == `PRIV_M)? `ECALL_FROM_M :
+                                            (priv_i == `PRIV_S)? `ECALL_FROM_S :
+                                            (priv_i == `PRIV_U)? `ECALL_FROM_U :
+                                            `ECALL_FROM_M;
                             end
                             `IMM_WFI:;
                             default:    error();

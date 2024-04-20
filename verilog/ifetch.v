@@ -14,11 +14,9 @@ module ifetch (
     input           branch_i,
     input  [63:0]   branch_target_i,
     // exception
-    input           exception_i,    // from wb
-    input           mret_i,         // from id
-    input  [63:0]   mtvec_i,        // from id
-    input  [63:0]   mepc_i,         // from id
-    input  [63:0]   mcause_i,       // from id
+    input           exception_i,        // from wb
+    input  [63:0]   exception_newPC_i,  // from csr
+    input  [63:0]   cause_i,            // from wb
     // used by id's jalr
     output          is_compressed_o,
     // fetch
@@ -27,8 +25,8 @@ module ifetch (
 );
     reg [63:0] pc;
     reg [63:0] next_pc;
-
     assign is_compressed_o = inst_i[1:0] != 2'b11;
+
     always @*   begin
         // combinational logic for next_pc
         if (reset)
@@ -37,11 +35,8 @@ module ifetch (
             next_pc = pc;
         // exception & branch won't both happen, since exception will flush the pipeline
         else if (exception_i)
-            next_pc = mtvec_i[0]? // mode
-                {mtvec_i[63:2], 2'b0} + (mcause_i << 2):
-                {mtvec_i[63:2], 2'b0};
-        else if (mret_i)
-            next_pc = mepc_i;
+            // ecall, xret
+            next_pc = exception_newPC_i;
         else if (branch_i)
             next_pc = branch_target_i;
         else if (is_compressed_o)
@@ -55,6 +50,13 @@ module ifetch (
         pc <= next_pc;
     end
 
+    wire [31:0] inst;
+    RVCExpander e(
+        .pc_i(pc_i),
+        .inst_i(inst_i),
+        .inst_o(inst)
+    );
+
     assign pc_o = pc;
-    assign inst_o = inst_i;
+    assign inst_o = inst;
 endmodule
