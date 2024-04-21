@@ -1,3 +1,4 @@
+#pragma GCC diagnostic ignored "-Wdiv-by-zero"
 #include "trap.h"
 
 #define N 10
@@ -17,7 +18,12 @@ int main() {
   for(i = 0; i < N; i ++)
     check(a[i] == i);
 
-  check(0x8000000000000000 / 0xffffffffffffffff == 0x8000000000000000);
+  check((((int64_t)1 << 63) /  1) == ((int64_t)1 << 63));
+  check((((int64_t)1 << 63) / -1) == ((int64_t)1 << 63));
+  check((((int64_t)1 << 63) %  1) == 0);
+  check((((int64_t)1 << 63) % -1) == 0);
+
   check(1 / 0 == -1);
+  check(1 % 0 ==  1);
   return 0;
 }
