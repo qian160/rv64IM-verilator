@@ -1,19 +1,10 @@
-#include"include/sdb.h"
-#include"include/macro.h"
 #include"include/testbench.h"
+#include"include/defs.h"
 #include"include/CSR.h"
-
-using namespace std;
-
-extern Vtop * top;
-extern TestBench<Vtop> tb;
-
-extern void init_disasm(const char *triple);
-extern void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
-extern void my_exit(int);
 
 CPU_state state;
 Statistics statistics;
+#define pmem_start  0x80000000l
 
 extern "C" void set_gpr_ptr(const svOpenArrayHandle r) {
 	state.gpr_ptr = (uint64_t*)(((VerilatedDpiOpenVar*)r)->datap());
@@ -23,20 +14,12 @@ extern "C" void set_csr_ptr(const svOpenArrayHandle r) {
 	state.csr_ptr = (uint64_t*)(((VerilatedDpiOpenVar*)r)->datap());
 }
 
-extern "C" void set_mem_ptr(const svOpenArrayHandle r) {
-	state.mem_ptr = (uint8_t*)(((VerilatedDpiOpenVar*)r)->datap());
-}
-
 const char *regs[] = {
     "x0",  "ra", "sp",   "gp",  "tp",  "t0",  "t1",  "t2",
     "s0",  "s1", "a0",   "a1",  "a2",  "a3",  "a4",  "a5",
     "a6",  "a7", "s2",   "s3",  "s4",  "s5",  "s6",  "s7",
     "s8",  "s9", "s10",  "s11", "t3",  "t4",  "t5",  "t6", 
 };
-
-bool in_pmem(uint64_t addr) {
-    return (addr >= pmem_start && addr < pmem_start + (1 << 20));
-}
 
 void dump_gpr() {
 	for (int i = 0; i < 32; i++) {
@@ -74,9 +57,6 @@ int cmd_s(string steps)  {
     while(n-- && !Verilated::gotFinish()){
         tb.tick();
         statistics.nr_cycles++;
-//        if (statistics.nr_cycles > 114514)
-//            // probably some bugs occurred
-//            my_exit(114514);
     }
     return 0;
 }
@@ -97,9 +77,9 @@ int cmd_h(string cmd) {
     return 0;
 }
 int cmd_q (string arg) {
-    cout << Green("Goodbye😀\n") << endl;
-    my_exit(114514);
-    return 114514;
+    cout << "Goodbye😀\n" << endl;
+    my_exit(0);
+    return 0;
 }
 
 int cmd_i(string arg) {
@@ -203,6 +183,20 @@ int cmd_d(string arg) {
     return 0;
 }
 
+std::unordered_map<char, cmd> cmd_table = {
+    {'h',   cmd{"Display this information",                     cmd_h,      "help [cmd]. default all"}},
+    {'c',   cmd{"Continue program, after signal or breakpoint", cmd_c,      "no argument"}},
+    {'q',   cmd{"quit the program",                             cmd_q,      "no argument"}},
+    {'s',   cmd{"step program",                                 cmd_s,      "s [num], default 1"}},
+    {'i',   cmd{"List of all registers and their contents",     cmd_i,      "no argument"}},
+    {'b',   cmd{"breakpoint",                                   cmd_b,      "b addr"}},
+    {'d',   cmd{"disasmble",                                    cmd_d,      "d n addr(hex)"}},
+    {'x',   cmd{"examine memory",                               cmd_x,      "x nf addr(hex)"}},
+
+    //{'w',   cmd{"watchpoint, add or delete",              cmd_w,      "w a expr, w d no"}}
+};
+
 void init_sdb() {
     init_disasm("riscv64-linux-gnu");
+    state.mem_ptr = dram_ptr;
 }

@@ -1,7 +1,8 @@
 .PHONY : clean build
 
 VSRC	= $(addprefix ./verilog/, $(shell ls ./verilog | grep \.\*v))   #.v or .sv
-CPPSRC	= $(addprefix ./cpp/, $(shell ls ./cpp | grep cpp))
+CPPSRC	+= $(addprefix ./cpp/, $(shell ls ./cpp | grep cpp))
+CPPSRC	+= $(addprefix ./cpp/device/, $(shell ls ./cpp/device | grep cpp))
 # -I is for verilog, -CFLAGS -I for cpp
 #Wno-unoptflat
 VFLAGS	= --cc --exe --trace -Wno-lint -Wno-unoptflat --build --top top\
@@ -9,6 +10,7 @@ VFLAGS	= --cc --exe --trace -Wno-lint -Wno-unoptflat --build --top top\
 	-O3 -Iverilog -j 8\
 	-CFLAGS -I$(shell llvm-config-11 --includedir) \
 	-CFLAGS -Icpp/include \
+	-CFLAGS -Icpp/device/include \
 	-LDFLAGS $(shell llvm-config-11 --libs)
 
 build: $(CPPSRC) $(VSRC)

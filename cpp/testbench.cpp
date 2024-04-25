@@ -1,43 +1,31 @@
-#include"include/macro.h"
-#include"include/sdb.h"
 #include"include/testbench.h"
+#include"include/defs.h"
 #include<signal.h>
-#include<iomanip>
-
-using namespace std;
 
 TestBench<Vtop> tb;
 Vtop *top = tb.getModule();
-
-extern void init_sdb();
-
-extern void load(char *img_file);
-
-void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
+char *img_file;
 
 typedef  struct{
 	char name;
 	string args;
 }cmd_info;
 
-static inline unique_ptr<cmd_info> get_cmd() 
+static inline cmd_info* get_cmd() 
 {		
 	string s;
 	getline(cin, s);
 	s.erase(0, s.find_first_not_of(" "));	//remove the leading spaces
 
 	if(s.length() == 0) return nullptr;
-	unique_ptr<cmd_info> info (make_unique<cmd_info>(cmd_info{
-		.name = s[0],
+
+	cmd_info * info = new cmd_info{
+		.name = s[0], 
 		.args = s.substr(1, s.size()),
-	}));
+	};
 	return info;
 }
 
-extern Statistics statistics;
-extern CPU_state state;
-
-using ld = long double;
 void my_exit(int sig) 
 {
 	double seconds = tb.time();
@@ -61,9 +49,10 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	load(argv[1]);
-	tb.reset();
+	img_file = argv[1];
+	init_devide();
 	init_sdb();
+	tb.reset();
 	tb.trace("./wave.vcd");
 
 	if (argc > 2)
@@ -71,7 +60,7 @@ int main(int argc, char **argv)
 
 	while(!Verilated::gotFinish()){
 		cout << "(0x" << top -> pc_o << ")";
-		unique_ptr<cmd_info> cmd = get_cmd();
+		cmd_info *cmd = get_cmd();
 		if(!cmd) continue;
 		cmd -> name |= 0x20;
 		if(cmd_table.find(cmd -> name)!= cmd_table.end())

@@ -81,7 +81,7 @@
 `define LOAD_ACCESS_FAULT        64'd5
 `define STORE_ADDR_MISALIGNED    64'd6
 `define STORE_ACCESS_FAULT       64'd7
-`define ECALL_FROM_U             64'd8
+`define ECALL_FROM_U             64'd8      // syscall
 `define ECALL_FROM_S             64'd9
 `define ECALL_FROM_M             64'd11
 `define INST_PAGEFAULT           64'd12

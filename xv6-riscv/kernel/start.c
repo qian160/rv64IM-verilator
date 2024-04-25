@@ -20,6 +20,7 @@ extern void timervec();
 void
 start()
 {
+  *(((volatile unsigned char *)(0x10000000L + 0))) = '?';
   // set M Previous Privilege mode to Supervisor, for mret.
   unsigned long x = r_mstatus();
   x &= ~MSTATUS_MPP_MASK;
@@ -44,7 +45,7 @@ start()
   w_pmpcfg0(0xf);
 
   // ask for clock interrupts.
-  timerinit();
+  timerinit();    // sleep, (zombie)
 
   // keep each CPU's hartid in its tp register, for cpuid().
   int id = r_mhartid();

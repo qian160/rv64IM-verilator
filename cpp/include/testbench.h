@@ -8,7 +8,8 @@
 #include <verilatedos.h>
 #include "Vtop.h"
 #include "debug.h"
-//#include "conf.h"
+
+using namespace std;
 
 template<class Module> class TestBench {
 private:

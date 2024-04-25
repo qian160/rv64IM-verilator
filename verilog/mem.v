@@ -1,5 +1,8 @@
 `include "define.v"
-import "DPI-C" function void set_mem_ptr(input logic [63:0] a[]);
+
+import "DPI-C" function longint mmio_read(input longint addr, input int len);
+import "DPI-C" function void mmio_write(input longint addr, input int len, input longint wdata);
+
 module mem(
     input   clock,
     input   reset,
@@ -45,42 +48,8 @@ module mem(
     // ifetch
     output  [31:0]  inst_o
 );
-    localparam KERNELBASE = 64'h80000000, PHYSTOP = 64'h86400000;
-    function in_pmem;
-        in_pmem = (aluout_i >= KERNELBASE) & (aluout_i < PHYSTOP);
-    endfunction
-
-    always @(*) begin
-        if((load_i | store_i) & !in_pmem()) begin
-            $display("bad address: %x at pc = %x\n", aluout_i, pc_i);
-            $finish();
-        end
-    end
-
-    wire [63:0] start = aluout_i - `PMEM_START;
-    reg  [63:0] load_data;
-    wire [1:0] width = funct3_i[1:0];
-    wire load_unsigned = funct3_i[2];
-    reg [7:0] mem [0:((1<<24)-1)];  // size = 2^24 = 16MB
-
-    reg [63:0] rvc_sdata;
-    always @(*) begin
-        rvc_sdata = 0;
-        case (funct5_i)
-            `FCT5_AMOADD:   rvc_sdata = load_data + sdata_i;
-            `FCT5_AMOAND:   rvc_sdata = load_data & sdata_i;
-            `FCT5_AMOOR:    rvc_sdata = load_data | sdata_i;
-            `FCT5_AMOXOR:   rvc_sdata = load_data ^ sdata_i;
-            default:        rvc_sdata = sdata_i;
-        endcase
-    end
-    wire [63:0] sdata = (rva_valid_i)? rvc_sdata: sdata_i;
-
-    /*  ifetch  */
-    wire [63:0] pc_off;
-    assign pc_off = if_pc_i - `PMEM_START;
-    assign inst_o = {mem[pc_off+3], mem[pc_off+2], mem[pc_off+1], mem[pc_off]};
-    /*  end ifetch  */
+    // ifetch
+    assign inst_o = mmio_read(if_pc_i, 4);
 
     // rva
     reg [63:0] lr_addr;
@@ -88,45 +57,52 @@ module mem(
     wire sc_valid = rva_valid_i & (funct5_i == `FCT5_SC);
     wire sc_success = sc_valid & (lr_addr == aluout_i);
 
-    initial begin
-        $readmemh("/home/s081/Downloads/projects/cpu/img", mem);
-        set_mem_ptr(mem);
-    end
-
+    // rva: lr-sc
     always @(posedge clock) begin
         if (lr_valid)
             lr_addr <= aluout_i;
+        else
+            lr_addr <= lr_addr;
     end
 
-    /*  load */
+    // load
+    reg  [63:0] load_data;
+    reg [63:0] loadVal_temp;
+    wire [3:0] width = 4'b1 << funct3_i[1:0];
+    wire load_unsigned = funct3_i[2];
     always @(*) begin
-        load_data = 64'd0;
-        if (load_i) begin
+        loadVal_temp = 0;
+        load_data = 0;
+        if(load_i)  begin
+            loadVal_temp = mmio_read(aluout_i, width);
             case (width)
-                2'd0:   load_data = (load_unsigned)? `ZEXT(mem[start], 8, 64) : `SEXT(mem[start], 8, 64);
-                2'd1:   load_data = (load_unsigned)? 
-                        `ZEXT({mem[start+1], mem[start]}, 16, 64):
-                        `SEXT({mem[start+1], mem[start]}, 16, 64);
-                2'd2:   load_data = (load_unsigned)? 
-                        `ZEXT({mem[start+3], mem[start+2], mem[start+1], mem[start]}, 32, 64): 
-                        `SEXT({mem[start+3], mem[start+2], mem[start+1], mem[start]}, 32, 64);
-                2'd3:   load_data = {mem[start+7], mem[start+6], mem[start+5], mem[start+4], mem[start+3], mem[start+2], mem[start+1], mem[start]};
+                4'd1:   load_data = (load_unsigned)? `ZEXT(loadVal_temp[7:0],  8,  64) : `SEXT(loadVal_temp[7:0] , 8,  64);
+                4'd2:   load_data = (load_unsigned)? `ZEXT(loadVal_temp[15:0], 16, 64) : `SEXT(loadVal_temp[15:0], 16, 64);
+                4'd4:   load_data = (load_unsigned)? `ZEXT(loadVal_temp[31:0], 32, 64) : `SEXT(loadVal_temp[31:0], 32, 64);
+                4'd8:   load_data = loadVal_temp;
             endcase
-            //$display("(%x) [x%d] <= %x [%x]", pc_i, rd_i, load_data, aluout_i);
         end
     end
 
+    // store
+    reg [63:0] rva_sdata;
+    always @(*) begin
+        rva_sdata = 0;
+        case (funct5_i)
+            `FCT5_AMOADD:   rva_sdata = load_data + sdata_i;
+            `FCT5_AMOAND:   rva_sdata = load_data & sdata_i;
+            `FCT5_AMOOR:    rva_sdata = load_data | sdata_i;
+            `FCT5_AMOXOR:   rva_sdata = load_data ^ sdata_i;
+            default:        rva_sdata = sdata_i;
+        endcase
+    end
+
+    wire [63:0] sdata = (rva_valid_i)? rva_sdata: sdata_i;
     always @(posedge clock) begin
         if (store_i)    begin
-            if (!sc_valid | sc_success)   begin
-                case (width)
-                    2'd0:   mem[start] <= sdata[7:0];
-                    2'd1:   {mem[start+1], mem[start]} <= sdata[15:0];
-                    2'd2:   {mem[start+3], mem[start+2], mem[start+1], mem[start]} <= sdata[31:0];
-                    2'd3:   {mem[start+7], mem[start+6], mem[start+5], mem[start+4], mem[start+3], mem[start+2], mem[start+1], mem[start]} <= sdata;
-                endcase
+            if (!sc_valid | sc_success) begin
+                mmio_write(aluout_i, width, sdata);
             end
-            //$display("(%x) %x => Mem[%x]", pc_i, sdata, aluout_i);
         end
     end
 

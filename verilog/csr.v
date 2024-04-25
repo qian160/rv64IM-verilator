@@ -46,9 +46,10 @@ module CSRFile (
     wire [63:0] stvec = csr[`STVEC];
     wire [63:0] utvec = csr[`UTVEC];
 
+    // go into higher privilege level to process the exception? 
     wire [63:0] xtvec = (priv == `PRIV_M)? mtvec:
-                    (priv == `PRIV_S)? stvec:
-                    (priv == `PRIV_U)? utvec:
+                    (priv == `PRIV_S)? mtvec:
+                    (priv == `PRIV_U)? stvec:
                     mtvec;
 
     wire xtvec_addr = xtvec[0]?    // mode
@@ -72,10 +73,11 @@ module CSRFile (
         priv <- xPP
         xPIE <- 1
         xPP  <- U
+        pc   <- xepc
     ecall:
-
+        pc   <- xtvec?
     */
-    
+    // todo: there must exist some bugs
     always @(*) begin
         exception_newPC_o = 0;
         next_priv = priv;
@@ -102,27 +104,36 @@ module CSRFile (
                     mstatus[`MSTATUS_UPIE] = 1'b1;
                 end
                 // ???
-                `ECALL_FROM_M:  begin
-                    exception_newPC_o = mtvec;
+                // xv6 supports only ecall from u ?
+                `ECALL_FROM_M, `ECALL_FROM_S, `ECALL_FROM_U:    begin
+                    exception_newPC_o = xtvec_addr;
                     next_priv = `PRIV_M;
-                    mstatus[`MSTATUS_MPP] = `PRIV_M;
-                    // others?
+                    
                 end
-                `ECALL_FROM_S:  begin
-                    exception_newPC_o = mtvec;
-                    next_priv = `PRIV_M;
-                    mstatus[`MSTATUS_SPP] = `PRIV_S;
-                end
-                `ECALL_FROM_U:  begin
-                    exception_newPC_o = stvec;
-                    next_priv = `PRIV_S;
-                    mstatus[`MSTATUS_SPP] = `PRIV_U;
-                end
+//                `ECALL_FROM_M:  begin
+//                    exception_newPC_o = mtvec;
+//                    next_priv = `PRIV_M;
+//                    mstatus[`MSTATUS_MPP] = `PRIV_M;
+//                    // others?
+//                end
+//                `ECALL_FROM_S:  begin
+//                    exception_newPC_o = mtvec;
+//                    next_priv = `PRIV_M;
+//                    mstatus[`MSTATUS_SPP] = `PRIV_S;
+//                end
+//                `ECALL_FROM_U:  begin
+//                    exception_newPC_o = stvec;
+//                    next_priv = `PRIV_S;
+//                    mstatus[`MSTATUS_SPP] = `PRIV_U;
+//                end
+                `BREAKPOINT:;
                 default:    begin
                     // other traps
                     // xPIE <- xIE
                     // xIE  <- 0
                     // xPP  <- priv
+                    $display("unsupported trap/exception, cause = %d", cause_i);
+                    $finish();
                 end
             endcase
         end

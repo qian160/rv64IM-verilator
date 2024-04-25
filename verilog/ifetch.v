@@ -23,7 +23,7 @@ module ifetch (
     output [63:0]   pc_o,
     output [31:0]   inst_o
 );
-    reg [63:0] pc;
+    reg [63:0] pc = `PMEM_START;
     reg [63:0] next_pc;
     assign is_compressed_o = inst_i[1:0] != 2'b11;
 

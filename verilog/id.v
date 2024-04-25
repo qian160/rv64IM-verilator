@@ -379,6 +379,7 @@ module id(
                                 exception_o = 1'b1;
                                 cause_o = `URET;
                             end
+                            // xv6: ecall will only be used in user mode. pc = stvec, next priv = s
                             `IMM_ECALL: begin           // pc = xtvec
                                 exception_o = 1'b1;
                                 cause_o = (priv_i == `PRIV_M)? `ECALL_FROM_M :

@@ -1,34 +1,9 @@
 #include<string>
+#include<cassert>
 
-#define _red_ 	    string("\033[1;31m")
-#define _green_ 	string("\033[1;32m")
-#define _yellow_    string("\033[1;33m")
-#define _blue_      string("\033[1;34m")
-#define _magenta_   string("\033[1;35m")
-#define _cyan_ 	    string("\033[1;36m")
-#define _white_ 	string("\033[1;37m")
-#define _pink_ 	    string("\033[1;38m")
-
-#define normal "\033[0m"
-
-static inline std::string Red(std::string str){
-    return _red_ + str + normal;
-}
-static inline std::string Yellow(std::string str){
-    return _yellow_ + str + normal;
-}
-static inline std::string Green (std::string str){
-    return _green_ + str + normal;
-}
-static inline std::string Cyan(std::string str){
-    return _cyan_ + str + normal;
-}
-static inline std::string Pink(std::string str){
-    return _pink_ + str + normal;
-}
-static inline std::string Magenta(std::string str){
-    return _magenta_ + str + normal;
-}
+#define STRLEN(CONST_STR) (sizeof(CONST_STR) - 1)       //== strlen lib function
+// calculate the length of an array
+#define ARRLEN(arr) (int)(sizeof(arr) / sizeof(arr[0])) //the '\0' is included
 
 #define ANSI_FG_BLACK   "\33[1;30m"
 #define ANSI_FG_RED     "\33[1;31m"
@@ -70,4 +45,4 @@ static inline std::string Magenta(std::string str){
 
 #define panic(format, ...) Assert(0, format, ## __VA_ARGS__)
 
-#define TODO() panic("please implement me")%  
+#define TODO() panic("please implement me")
