@@ -3,6 +3,8 @@
 #include <cassert>
 #include <fstream>
 
+extern char *img_file;
+
 using namespace std;
 using handler_t = void(uint64_t offset, uint64_t len , bool is_write);
 
