@@ -3,8 +3,12 @@
 #include<signal.h>
 
 TestBench<Vtop> tb;
-Vtop *top = tb.getModule();
 char *img_file;
+
+/// @return this `PC` is from ifetch stage
+uint64_t getPC() {
+	return tb.getModule()->pc_o;
+}
 
 typedef  struct{
 	char name;
@@ -31,7 +35,7 @@ void my_exit(int sig)
 	double seconds = tb.time();
 	char buf[128];
 	uint64_t nr_cycles = statistics.nr_cycles;
-	uint64_t nr_insts = top->nr_insts_o;
+	uint64_t nr_insts = tb.getModule()->nr_insts_o;
 	double ipc = (double)nr_insts / (double)nr_cycles;
 	sprintf(buf, "finished in %lf ms\n#cycles = %ld, #insts = %ld, ipc = %lf", seconds * 1000, nr_cycles, nr_insts, ipc);
 	cout << buf << endl;
@@ -53,13 +57,13 @@ int main(int argc, char **argv)
 	init_devide();
 	init_sdb();
 	tb.reset();
-	tb.trace("./wave.vcd");
+//	tb.trace("./wave.vcd");
 
 	if (argc > 2)
 		cmd_c("-1");
 
 	while(!Verilated::gotFinish()){
-		cout << "(0x" << top -> pc_o << ")";
+		cout << "(0x" << getPC() << ")";
 		cmd_info *cmd = get_cmd();
 		if(!cmd) continue;
 		cmd -> name |= 0x20;

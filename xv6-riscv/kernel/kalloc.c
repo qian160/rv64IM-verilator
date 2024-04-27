@@ -23,6 +23,7 @@ struct {
   struct run *freelist;
 } kmem;
 
+/// @brief This will take a lot of time in simulation environment...(more than 15 minutes?)
 void
 kinit()
 {
@@ -35,8 +36,10 @@ freerange(void *pa_start, void *pa_end)
 {
   char *p;
   p = (char*)PGROUNDUP((uint64)pa_start);
-  for(; p + PGSIZE <= (char*)pa_end; p += PGSIZE)
+  for(; p + PGSIZE <= (char*)pa_end; p += PGSIZE){
     kfree(p);
+//    printf("addr %p freed\n", p);
+  }
 }
 
 // Free the page of physical memory pointed at by pa,

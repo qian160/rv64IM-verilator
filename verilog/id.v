@@ -388,7 +388,7 @@ module id(
                                             `ECALL_FROM_M;
                             end
                             `IMM_WFI:;
-                            default:    error();
+                            default:;       // sfence.vma
                         endcase
                     end
                     // these csr-insts will write both refgile & csr

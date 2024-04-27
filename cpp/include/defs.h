@@ -2,9 +2,9 @@
 #include <unordered_map>
 #include <functional>
 // testbench
-extern Vtop * top;
 extern TestBench<Vtop> tb;
 extern char *img_file;
+extern uint64_t getPC();
 extern void my_exit(int sig);
 
 // sdb

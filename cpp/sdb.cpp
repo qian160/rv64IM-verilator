@@ -62,10 +62,11 @@ int cmd_s(string steps)  {
 }
 
 int cmd_c(string args) {
-    while (!Verilated::gotFinish() && !breakpoint_exists(top->pc_o))
+    //while (!Verilated::gotFinish() && !breakpoint_exists(getPC()))
+    while (!Verilated::gotFinish()) // disable breakpoints to improve performance...
         cmd_s("1");
     if (!Verilated::gotFinish())
-        cout << "reach breakpoint at " << top->pc_o << endl;
+        cout << "reach breakpoint at " << getPC() << endl;
     return 0;
 }
 

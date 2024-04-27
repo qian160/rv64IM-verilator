@@ -23,6 +23,31 @@
 #define UART0 0x10000000L
 #define UART0_IRQ 10
 
+/*  The serial transmitter section consists of a Transmit Hold Register (THR)
+and Transmit Shift Register (TSR). The status of the transmit hold register
+is provided in the Line Status Register (LSR). Writing to this register (THR)
+will transfer the contents of data bus (D7-D0) to the Transmit holding register
+whenever the transmitter holding register or transmitter shift register is empty.
+The transmit holding register empty flag will be set to "1" when the transmitter
+is empty or data is transferred to the transmit shift register. Note that a write
+operation should be performed when the transmit holding register empty flag is set. */
+
+#define RHR 0                 // receive holding register (for input bytes)
+#define THR 0                 // transmit holding register (for output bytes)
+#define IER 1                 // interrupt enable register
+#define IER_RX_ENABLE (1<<0)
+#define IER_TX_ENABLE (1<<1)
+#define FCR 2                 // FIFO control register
+#define FCR_FIFO_ENABLE (1<<0)
+#define FCR_FIFO_CLEAR (3<<1) // clear the content of the two FIFOs
+#define ISR 2                 // interrupt status register
+#define LCR 3                 // line control register
+#define LCR_EIGHT_BITS (3<<0)
+#define LCR_BAUD_LATCH (1<<7) // special mode to set baud rate
+#define LSR 5                 // line status register
+#define LSR_RX_READY (1<<0)   // input is waiting to be read from RHR
+#define LSR_TX_IDLE (1<<5)    // THR can accept another character to send
+
 // virtio mmio interface
 #define VIRTIO0 0x10001000
 #define VIRTIO0_IRQ 1
@@ -42,6 +67,14 @@
 #define PLIC_SPRIORITY(hart) (PLIC + 0x201000 + (hart)*0x2000)
 #define PLIC_MCLAIM(hart) (PLIC + 0x200004 + (hart)*0x2000)
 #define PLIC_SCLAIM(hart) (PLIC + 0x201004 + (hart)*0x2000)
+
+#define VIRT_CPUS_MAX_BITS             9
+#define VIRT_CPUS_MAX                  (1 << VIRT_CPUS_MAX_BITS)
+#define VIRT_PLIC_CONTEXT_BASE         0x200000
+#define VIRT_PLIC_CONTEXT_STRIDE       0x1000
+#define VIRT_PLIC_SIZE(__num_context) \
+    (VIRT_PLIC_CONTEXT_BASE + (__num_context) * VIRT_PLIC_CONTEXT_STRIDE)
+
 
 // the kernel expects there to be RAM
 // for use by the kernel and user pages
@@ -82,7 +115,7 @@ static const MemMapEntry virt_memmap[] = {
     [VIRT_CLINT] =       {  0x2000000,       0x10000 },
     [VIRT_ACLINT_SSWI] = {  0x2F00000,        0x4000 },
     [VIRT_PCIE_PIO] =    {  0x3000000,       0x10000 },
-    [VIRT_PLIC] =        {  0xc000000,      0x201000 },
+    [VIRT_PLIC] =        {  0xc000000,  VIRT_PLIC_SIZE(VIRT_CPUS_MAX * 2) },
 
     [VIRT_UART0] =       { 0x10000000,         0x100 },
     [VIRT_VIRTIO] =      { 0x10001000,        0x1000 },
